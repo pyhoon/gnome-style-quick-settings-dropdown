@@ -50,6 +50,9 @@ Sub Class_Globals
 	Private btnPowerCircle As B4XView
 	Private btnFooterUserPill As B4XView
 	'Private lblFooterUserPillIcon As B4XView
+	Private blob1 As B4XView
+	Private blob2 As B4XView
+	Private blob3 As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
@@ -93,6 +96,10 @@ End Sub
 Private Sub B4XPage_Resize (Width As Int, Height As Int)
 	pnlTopBar.SetLayoutAnimated(0, 0, 0, Width, topOffset)
 	pnlMain.SetLayoutAnimated(0, 0, topOffset, Width, Height - topOffset)
+	' Keep blobs clustered top-right behind the frosted card
+	If blob1.IsInitialized Then blob1.SetLayoutAnimated(0, Width - 340dip, 10dip, 160dip, 160dip)
+	If blob2.IsInitialized Then blob2.SetLayoutAnimated(0, Width - 220dip, 50dip, 140dip, 140dip)
+	If blob3.IsInitialized Then blob3.SetLayoutAnimated(0, Width - 280dip, 120dip, 120dip, 120dip)
 	
 	' Anchor the trigger to the upper far-right tray boundary
 	btnSettingsTrigger.SetLayoutAnimated(0, Width - btnSettingsTrigger.Width - 15dip, btnSettingsTrigger.Top, btnSettingsTrigger.Width, btnSettingsTrigger.Height)
@@ -342,19 +349,19 @@ Private Sub BuildProgrammaticUI
 	Root.AddView(pnlMain, 0, topOffset, Root.Width, Root.Height - topOffset)
 	pnlMain.As(Pane).Style = "-fx-background-color: linear-gradient(to bottom right, #6a11cb 0%, #2575fc 50%, #00d2ff 100%);"
 	
-	' Decorative blurred blobs behind the drawer (make translucency obvious) - clustered top-right
-	Dim blob1 As B4XView = xui.CreatePanel("")
+	' Decorative blurred blobs behind the drawer (make translucency obvious) - clustered top-right, right-aligned
+	blob1 = xui.CreatePanel("")
 	blob1.Color = 0x66FF5E62
 	blob1.As(Pane).Style = "-fx-background-color: #FF5E62; -fx-background-radius: 80px;"
-	pnlMain.AddView(blob1, 460dip, 10dip, 160dip, 160dip)
-	Dim blob2 As B4XView = xui.CreatePanel("")
+	pnlMain.AddView(blob1, Root.Width - 340dip, 10dip, 160dip, 160dip)
+	blob2 = xui.CreatePanel("")
 	blob2.Color = 0x66FF9966
 	blob2.As(Pane).Style = "-fx-background-color: #FF9966; -fx-background-radius: 70px;"
-	pnlMain.AddView(blob2, 580dip, 50dip, 140dip, 140dip)
-	Dim blob3 As B4XView = xui.CreatePanel("")
+	pnlMain.AddView(blob2, Root.Width - 220dip, 50dip, 140dip, 140dip)
+	blob3 = xui.CreatePanel("")
 	blob3.Color = 0x6655EFCB
 	blob3.As(Pane).Style = "-fx-background-color: #55EFCB; -fx-background-radius: 60px;"
-	pnlMain.AddView(blob3, 520dip, 120dip, 120dip, 120dip)
+	pnlMain.AddView(blob3, Root.Width - 280dip, 120dip, 120dip, 120dip)
 	
 	Dim lblCenter As Label
 	lblCenter.Initialize("")
