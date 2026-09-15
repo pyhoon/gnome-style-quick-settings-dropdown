@@ -48,6 +48,8 @@ Sub Class_Globals
 	Private btnSettingsCircle As B4XView
 	Private btnUserCircle As B4XView
 	Private btnPowerCircle As B4XView
+	Private btnFooterUserPill As B4XView
+	Private lblFooterUserPillIcon As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
@@ -182,12 +184,21 @@ Private Sub btnDND_Click
 	If btn.Color = 0xFF3584E4 Then btn.Color = 0xFF363636 Else btn.Color = 0xFF3584E4
 End Sub
 
-' Small circle placeholders - no functionality
+' Small circle + footer pill placeholders - no functionality
 Private Sub btnSettingsCircle_Click
+	
 End Sub
+
 Private Sub btnUserCircle_Click
+	
 End Sub
+
 Private Sub btnPowerCircle_Click
+	
+End Sub
+
+Private Sub btnFooterUserPill_Click
+	
 End Sub
 
 Private Sub btnSliderVolUp_Click
@@ -572,8 +583,28 @@ Private Sub BuildProgrammaticUI
 	
 	PinCLVToDrawer
 	
-	' Footer circles (below CLV) - settings / user / power, hover-enabled, right-aligned
+	' Footer (below CLV) - left user pill + right circles, hover-enabled
 	Dim footerY As Int = clvTop + clvH + 12dip
+	' Left user pill
+	Dim btnFootUser As Button
+	btnFootUser.Initialize("btnFooterUserPill")
+	Dim bxlFootUser As B4XView = btnFootUser
+	bxlFootUser.Text = "Aeric"
+	bxlFootUser.TextColor = 0xFFFFFFFF
+	bxlFootUser.Font = xui.CreateDefaultFont(12)
+	pnlQuickSettings.AddView(bxlFootUser, 15dip, footerY, 110dip, 38dip)
+	btnFooterUserPill = bxlFootUser
+	'Dim lblFU As Label
+	'lblFU.Initialize("")
+	'lblFooterUserPillIcon = lblFU
+	'lblFooterUserPillIcon.Text = Chr(0xF007) ' FA user
+	'lblFooterUserPillIcon.TextColor = 0xFFFFFFFF
+	'lblFooterUserPillIcon.Font = xui.CreateFontAwesome(12)
+	'pnlQuickSettings.AddView(lblFooterUserPillIcon, 28dip, footerY + 9dip, 20dip, 20dip)
+	'SetMouseTransparent(lblFooterUserPillIcon)
+	Dim joFootUser As JavaObject = bxlFootUser
+	joFootUser.RunMethodJO("getStyleClass", Null).RunMethod("add", Array("header-pill"))
+	
 	Dim btnSetC As Button
 	btnSetC.Initialize("btnSettingsCircle")
 	Dim bxlSetC As B4XView = btnSetC
@@ -613,6 +644,8 @@ Private Sub BuildProgrammaticUI
 		If scene.IsInitialized Then
 			Dim sheets As JavaObject = scene.RunMethod("getStylesheets", Null)
 			sheets.RunMethod("add", Array(url))
+		Else
+			CallSubDelayed2(Me, "InjectHoverCss", url)
 		End If
 	Catch
 		Log("hover css failed: " & LastException.Message)
@@ -743,8 +776,10 @@ Private Sub ResizeDrawerToContent
 	' stale (e.g. designer-size) values and leave the list taller than the card.
 	clvH = targetClvHeight
 	PinCLVToDrawer
-	' 2b. Footer circles sit below CLV - right-aligned, pinned to CLV bottom (+12dip gap)
+	' 2b. Footer below CLV - left user pill + right circles, pinned to CLV bottom (+12dip gap)
 	Dim footerY As Int = clvTop + targetClvHeight + 12dip
+	If btnFooterUserPill.IsInitialized Then btnFooterUserPill.SetLayoutAnimated(0, 15dip, footerY, 110dip, 38dip)
+	If lblFooterUserPillIcon.IsInitialized Then lblFooterUserPillIcon.SetLayoutAnimated(0, 28dip, footerY + 9dip, 20dip, 20dip)
 	If btnSettingsCircle.IsInitialized Then btnSettingsCircle.SetLayoutAnimated(0, panelWidth - 145dip, footerY, 38dip, 38dip)
 	If btnUserCircle.IsInitialized Then btnUserCircle.SetLayoutAnimated(0, panelWidth - 99dip, footerY, 38dip, 38dip)
 	If btnPowerCircle.IsInitialized Then btnPowerCircle.SetLayoutAnimated(0, panelWidth - 53dip, footerY, 38dip, 38dip)
@@ -817,6 +852,19 @@ Private Sub PinCLVToDrawer
 	Dim clvBase As B4XView = clvNotifications.GetBase
 	clvBase.SetLayoutAnimated(0, 15dip, clvTop, panelWidth - 30dip, clvH)
 	clvNotifications.Base_Resize(panelWidth - 30dip, clvH) ' Forces internal Scrollview content rebuild
+End Sub
+
+Private Sub InjectHoverCss(Url As String)
+	Try
+		Dim jo As JavaObject = pnlQuickSettings
+		Dim scene As JavaObject = jo.RunMethod("getScene", Null)
+		If scene.IsInitialized Then
+			Dim sheets As JavaObject = scene.RunMethod("getStylesheets", Null)
+			sheets.RunMethod("add", Array(Url))
+		End If
+	Catch
+		Log(LastException.Message)
+	End Try
 End Sub
 
 #If Java
