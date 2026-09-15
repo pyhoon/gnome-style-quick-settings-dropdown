@@ -71,10 +71,10 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	' Populating dummy system notifications mimicking Linux Desktop
 	clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
 	clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
+	clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
+	clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "3h ago"), "")
+	'clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "6hr ago"), "")
+	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "1day ago"), "")
 	
 	' 3. RE-CALCULATE DRAWER HEIGHT DYNAMICALLY WITHOUT BREAKING RENDERS
 	ResizeDrawerToContent
@@ -484,6 +484,17 @@ Private Sub BuildProgrammaticUI
 	joBase.RunMethod("setStyle", Array("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"))
 	
 	PinCLVToDrawer
+	
+	' Install key/wheel filter so fitted list (<=3) cannot be scrolled via
+	' keyboard (Up/Down/Page/Home/End/Space) or mouse-wheel. The viewport is already
+	' fitted exactly to content, but JavaFX still delivers those events.
+	Try
+		Dim joMe As JavaObject = Me
+		joMe.RunMethod("installClvKeyFilter", Array(pnlQuickSettings))
+	Catch
+		Log("installClvKeyFilter failed: " & LastException.Message)
+	End Try
+	
 	pnlQuickSettings.BringToFront
 End Sub
 
@@ -556,7 +567,15 @@ End Sub
 
 ' Dynamically sizes the CLV and the GNOME settings panel based on item count
 Private Sub ResizeDrawerToContent
-	' 1. Calculate the combined height of all items safely
+	' 1. Calculate the combined height of all items safely - must include divider
+	'    gaps, otherwise the CLV content (panels + dividers) is taller than the
+	'    viewport and the wheel scrolls even when the scrollbar is hidden.
+	Dim divSize As Int = 0
+	Try
+		divSize = clvNotifications.GetDividerSize
+	Catch
+		divSize = 0
+	End Try
 	Dim totalItemsHeight As Int = 0
 	If clvNotifications.Size > 0 Then
 		For i = 0 To clvNotifications.Size - 1
@@ -567,11 +586,14 @@ Private Sub ResizeDrawerToContent
 				totalItemsHeight = totalItemsHeight + 65dip ' Default placeholder fallback row height
 			End If
 		Next
+		If clvNotifications.Size > 1 Then totalItemsHeight = totalItemsHeight + (clvNotifications.Size - 1) * divSize
 	End If
 	
-	' Set layout bounds constraints
+	' Set layout bounds constraints - show up to 3 items fitted, no wheel scroll
 	Dim minClvHeight As Int = 40dip
-	Dim maxClvHeight As Int = 240dip
+	Dim itemHeight As Int = 65dip
+	Dim maxVisibleItems As Int = 3
+	Dim maxClvHeight As Int = maxVisibleItems * itemHeight + Max(0, maxVisibleItems - 1) * divSize
 	Dim targetClvHeight As Int = Max(minClvHeight, Min(totalItemsHeight, maxClvHeight))
 	
 	' 2. Pin the reparented designer CLV to its exact slot inside the drawer card.
@@ -589,6 +611,9 @@ Private Sub ResizeDrawerToContent
 	If btnClearAll.IsInitialized Then btnClearAll.Enabled = (clvNotifications.Size > 0)
 	If lblEmptyNotifications.IsInitialized Then lblEmptyNotifications.Visible = (clvNotifications.Size = 0)
 	
+	' 3c. Show scrollbar only when more than 3 items (otherwise hide entirely)
+	SetClvScrollbarVisible(clvNotifications.Size > 3)
+	
 	' 4. Instantly shift or anchor the panel location based on state
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
 	If isDrawerOpen Then
@@ -602,6 +627,32 @@ Private Sub ResizeDrawerToContent
 	pnlQuickSettings.BringToFront
 End Sub
 
+' Toggles the CLV vertical scrollbar: hidden for <=3 items, AS_NEEDED for >3
+' and disables key/wheel scroll when fitted (otherwise arrow keys / wheel still
+' nudge the fitted content by a pixel even with no overflow).
+Private Sub SetClvScrollbarVisible(Visible As Boolean)
+	Try
+		Dim joSP As JavaObject = clvNotifications.sv
+		Dim joPolicy As JavaObject
+		joPolicy.InitializeStatic("javafx.scene.control.ScrollPane$ScrollBarPolicy")
+		Dim policy As Object
+		If Visible Then
+			policy = joPolicy.GetField("AS_NEEDED")
+		Else
+			policy = joPolicy.GetField("NEVER")
+		End If
+		joSP.RunMethod("setVbarPolicy", Array(policy))
+	Catch
+		Log("SetClvScrollbarVisible failed: " & LastException.Message)
+	End Try
+	Try
+		Dim joMe As JavaObject = Me
+		joMe.RunMethod("setClvFitted", Array(Not(Visible)))
+	Catch
+		Log("setClvFitted failed: " & LastException.Message)
+	End Try
+End Sub
+
 ' Forces the reparented designer CLV back into its exact slot inside the drawer card.
 ' The CLV is created by MainPage.bjl and moved into pnlQuickSettings at runtime, so window
 ' resizes or open/close animations can leave it stretched beyond the card (a plain Pane does
@@ -612,3 +663,29 @@ Private Sub PinCLVToDrawer
 	clvBase.SetLayoutAnimated(0, 15dip, clvTop, panelWidth - 30dip, clvH)
 	clvNotifications.Base_Resize(panelWidth - 30dip, clvH) ' Forces internal Scrollview content rebuild
 End Sub
+
+#If Java
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.ScrollEvent;
+private boolean _clvFitted = true;
+public void setClvFitted(boolean f) { _clvFitted = f; }
+public void installClvKeyFilter(Object nodeObj) {
+    javafx.scene.Node node;
+    if (nodeObj instanceof javafx.scene.Node) node = (javafx.scene.Node) nodeObj;
+    else if (nodeObj instanceof anywheresoftware.b4a.objects.B4XViewWrapper) node = (javafx.scene.Node) ((anywheresoftware.b4a.objects.B4XViewWrapper) nodeObj).getObject();
+    else return;
+    node.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+        if (_clvFitted) {
+            KeyCode c = e.getCode();
+            if (c == KeyCode.UP || c == KeyCode.DOWN || c == KeyCode.PAGE_UP || c == KeyCode.PAGE_DOWN
+                    || c == KeyCode.HOME || c == KeyCode.END || c == KeyCode.SPACE) {
+                e.consume();
+            }
+        }
+    });
+    node.addEventFilter(ScrollEvent.SCROLL, e -> {
+        if (_clvFitted) e.consume();
+    });
+}
+#End If
