@@ -30,7 +30,7 @@ Sub Class_Globals
 	Private btnSettingsTrigger As B4XView
 	
 	' Inside Quick Settings Layout Views
-	Private clvNotifications As CustomListView
+	Private clvNotifications As CustomListView ' <-- Linked from your MainPage designer layout
 	Private lblVolumePct As B4XView
 	
 	' State Tracking
@@ -46,7 +46,7 @@ End Sub
 Private Sub B4XPage_Created (Root1 As B4XView)
 	Root = Root1
 	
-	' 1. BUILD THE UI LAYOUTS PROGRAMMATICALLY
+	' 1. BUILD THE UI LAYOUTS AND NEST DESIGNER ELEMENTS
 	BuildProgrammaticUI
 	
 	' 2. INITIAL COMPONENT STATES
@@ -55,7 +55,7 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	' Populating dummy system notifications mimicking Linux Desktop
 	clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
 	clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
-	clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
+	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
@@ -81,45 +81,37 @@ End Sub
 
 ' --- INTERACTION LAYER ---
 
-' Triggered by clicking the custom multi-segment status button inside your upper menu bar
 Private Sub btnSettingsTrigger_Click
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
 	
 	If isDrawerOpen Then
-		' Retract up seamlessly out of sight
 		pnlQuickSettings.SetLayoutAnimated(220, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
 		isDrawerOpen = False
-		' Change panel indicator color back to baseline
-		btnSettingsTrigger.Color = 0x00FFFFFF ' Transparent standard
+		btnSettingsTrigger.Color = 0x00FFFFFF 
 	Else
-		' Snap out and descend gracefully right beneath your tray icon
 		pnlQuickSettings.BringToFront
 		pnlQuickSettings.SetLayoutAnimated(250, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
 		isDrawerOpen = True
-		' Give active status visual context highlight
-		btnSettingsTrigger.Color = 0x22FFFFFF ' Subtle selection highlight
+		btnSettingsTrigger.Color = 0x22FFFFFF 
 	End If
 End Sub
 
-' UX Feature: Clicking outside onto your main UI components instantly closes the tray window
 Private Sub pnlMain_Touch (Action As Int, X As Float, Y As Float)
-	' 0 evaluates to standard screen TOUCH_ACTION_DOWN
 	If isDrawerOpen And Action = 0 Then
-		btnSettingsTrigger_Click ' Toggles active states cleanly back to false
+		btnSettingsTrigger_Click 
 	End If
 End Sub
 
 Private Sub pnlQuickSettings_Touch (Action As Int, X As Float, Y As Float)
-	' Intentionally left blank to capture clicks and prevent drop down dissipation
+	' Intentionally left blank to capture clicks and prevent dissipation
 End Sub
 
 ' --- UI INTERACTION STUBS (Quick Settings Controls) ---
 
 Private Sub btnWifi_Click
 	Dim btn As B4XView = Sender
-	' Toggle pill color background state mockups
-	If btn.Color = 0xFF3584E4 Then ' GNOME Blue accent
-		btn.Color = 0xFF363636     ' Standard Dark grey button background
+	If btn.Color = 0xFF3584E4 Then 
+		btn.Color = 0xFF363636     
 		xui.MsgboxAsync("Wi-Fi Interface Disabled", "System Settings")
 	Else
 		btn.Color = 0xFF3584E4
@@ -143,21 +135,12 @@ Private Sub btnSliderVolDown_Click
 	lblVolumePct.Text = "65%"
 End Sub
 
-' --- DRAWING ARCHITECTURE UTILITIES ---
-
-' FIXED: Changed from Instant .SetLayout to .SetLayoutAnimated with 0 duration
-'Private Sub HidePanelImmediately
-'	pnlQuickSettings.SetLayoutAnimated(0, Root.Width - panelWidth - 15dip, -panelHeight, panelWidth, panelHeight)
-'	isDrawerOpen = False
-'End Sub
-
 ' Helper script generating beautiful nested notification blocks programmatically
 Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As String) As B4XView
 	Dim p As B4XView = xui.CreatePanel("")
 	p.SetLayoutAnimated(0, 0, 0, panelWidth - 30dip, 65dip)
 	p.Color = 0xFF2D2D2D
 	
-	' Title String styling
 	Private lblTitle As Label
 	lblTitle.Initialize("")
 	Dim bxlTitle As B4XView = lblTitle
@@ -166,7 +149,6 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	bxlTitle.Font = xui.CreateDefaultBoldFont(13)
 	p.AddView(bxlTitle, 10dip, 8dip, 180dip, 20dip)
 	
-	' Timing string alignment
 	Private lblTime As Label
 	lblTime.Initialize("")
 	Dim bxlTime As B4XView = lblTime
@@ -175,7 +157,6 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	bxlTime.Font = xui.CreateDefaultFont(11)
 	p.AddView(bxlTime, p.Width - 80dip, 8dip, 70dip, 20dip)
 	
-	' Body Content layout block
 	Private lblBody As Label
 	lblBody.Initialize("")
 	Dim bxlBody As B4XView = lblBody
@@ -189,9 +170,10 @@ End Sub
 
 Private Sub BuildProgrammaticUI
 	Root.Color = 0xFF1E1E1E
+	
+	' 1. Load the designer layout file first so custom views are fully instantiated
 	Root.LoadLayout("MainPage")
 	
-	' FIXED: Changed 'Panel' declarations to 'Pane' for B4J
 	' Top Bar Panel
 	Dim p1 As Pane
 	p1.Initialize("")
@@ -203,7 +185,7 @@ Private Sub BuildProgrammaticUI
 	Dim lblClock As Label
 	lblClock.Initialize("")
 	Dim bxlClock As B4XView = lblClock
-	bxlClock.Text = CurrentTime ' "Sep 15, 1:57 PM"
+	bxlClock.Text = CurrentTime
 	bxlClock.TextColor = 0xFFFFFFFF
 	bxlClock.Font = xui.CreateDefaultBoldFont(13)
 	pnlTopBar.AddView(bxlClock, 20dip, 15dip, 200dip, 20dip)
@@ -239,7 +221,6 @@ Private Sub BuildProgrammaticUI
 	pnlQuickSettings.Color = 0xFF242424
 	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 50dip, panelWidth, panelHeight)
 	
-	' Injection of critical GNOME theme specs: smooth curves and comprehensive alpha drop shadowing drops
 	Dim joPanel As JavaObject = pnlQuickSettings
 	joPanel.RunMethod("setStyle", Array("-fx-background-radius: 18px; -fx-border-radius: 18px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 20, 0, 0, 8);"))
 	
@@ -298,19 +279,19 @@ Private Sub BuildProgrammaticUI
 	bxlNH.Font = xui.CreateDefaultBoldFont(12)
 	pnlQuickSettings.AddView(bxlNH, 20dip, 135dip, 200dip, 20dip)
 	
-	Dim clv As CustomListView = clvNotifications
-	'clv.Initialize(Me, "clvNotifications")
-	Dim bxlClv As B4XView = clv.AsView
-	pnlQuickSettings.AddView(bxlClv, 15dip, 160dip, panelWidth - 30dip, 240dip)
-	clv.sv.Color = 0xFF242424
-	'clv.sv.Color = xui.Color_Transparent
-	CallSubDelayed3(Me, "SetScrollPaneBackgroundColor", clv, xui.Color_Transparent)
+	' FIXED: Do NOT initialize clvNotifications. It's already built by Root.LoadLayout!
+	' Instead, we fetch its Base View panel and target its position inside the card wrapper.
+	Dim clvBasePanel As B4XView = clvNotifications.GetBase
 	
-	' CALL THE SCROLLBAR STYLE ROUTINE HERE
-	StyleCustomScrollbar(clv)
+	' Remove it from the root layout layer and nest it safely inside our floating drawer card instead
+	clvBasePanel.RemoveViewFromParent
+	pnlQuickSettings.AddView(clvBasePanel, 15dip, 160dip, panelWidth - 30dip, 240dip)
 	
-	' ADD THIS LINE TO FIX LAYER OVERLAPS:
-    pnlQuickSettings.BringToFront
+	clvNotifications.sv.Color = 0xFF242424
+	CallSubDelayed3(Me, "SetScrollPaneBackgroundColor", clvNotifications, xui.Color_Transparent)
+	
+	StyleCustomScrollbar(clvNotifications)
+	pnlQuickSettings.BringToFront
 End Sub
 
 Sub CurrentTime As String
@@ -382,35 +363,39 @@ End Sub
 
 ' Dynamically sizes the CLV and the GNOME settings panel based on item count
 Private Sub ResizeDrawerToContent
-    ' 1. Calculate the combined height of all items
-    Dim totalItemsHeight As Int = 0
-    If clvNotifications.Size > 0 Then
-        For i = 0 To clvNotifications.Size - 1
-            Dim p As B4XView = clvNotifications.GetPanel(i)
-            totalItemsHeight = totalItemsHeight + p.Height
-        Next
-    End If
-
-    ' Set layout bounds constraints
-    Dim minClvHeight As Int = 60dip
-    Dim maxClvHeight As Int = 240dip
-    Dim targetClvHeight As Int = Max(minClvHeight, Min(totalItemsHeight, maxClvHeight))
-
-    ' 2. Resize the CLV View bound bounds safely inside the drawer card
-    Dim clvBase As B4XView = clvNotifications.GetBase
-    clvBase.SetLayoutAnimated(0, clvBase.Left, clvBase.Top, clvBase.Width, targetClvHeight)
-    clvNotifications.Base_Resize(clvBase.Width, targetClvHeight) ' Forces internal Scrollview rebuild
-
-    ' 3. Calculate new total height for the outer GNOME drawer panel container
-    panelHeight = 160dip + targetClvHeight + 20dip
-
-    ' 4. Instantly shift or anchor the panel location based on state
-    Dim targetLeft As Int = Root.Width - panelWidth - 15dip
-    If isDrawerOpen Then
-        pnlQuickSettings.SetLayoutAnimated(0, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
-    Else
-        pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
-    End If
-
-    pnlQuickSettings.BringToFront
+	' 1. Calculate the combined height of all items safely
+	Dim totalItemsHeight As Int = 0
+	If clvNotifications.Size > 0 Then
+		For i = 0 To clvNotifications.Size - 1
+			Dim p As B4XView = clvNotifications.GetPanel(i)
+			If p.IsInitialized Then
+				totalItemsHeight = totalItemsHeight + p.Height
+			Else
+				totalItemsHeight = totalItemsHeight + 65dip ' Default placeholder fallback row height
+			End If
+		Next
+	End If
+	
+	' Set layout bounds constraints
+	Dim minClvHeight As Int = 40dip
+	Dim maxClvHeight As Int = 240dip
+	Dim targetClvHeight As Int = Max(minClvHeight, Min(totalItemsHeight, maxClvHeight))
+	
+	' 2. Resize the CLV View base layout wrapper panel safely inside the drawer card
+	Dim clvBase As B4XView = clvNotifications.GetBase
+	clvBase.SetLayoutAnimated(0, clvBase.Left, clvBase.Top, clvBase.Width, targetClvHeight)
+	clvNotifications.Base_Resize(clvBase.Width, targetClvHeight) ' Forces internal Scrollview content rebuild
+	
+	' 3. Calculate new total height for the outer GNOME drawer panel container
+	panelHeight = 160dip + targetClvHeight + 20dip
+	
+	' 4. Instantly shift or anchor the panel location based on state
+	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
+	If isDrawerOpen Then
+		pnlQuickSettings.SetLayoutAnimated(0, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
+	Else
+		pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
+	End If
+	
+	pnlQuickSettings.BringToFront
 End Sub
