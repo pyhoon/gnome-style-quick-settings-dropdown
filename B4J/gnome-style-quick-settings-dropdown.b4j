@@ -7,9 +7,10 @@ Library1=b4xpages
 Library2=jcore
 Library3=jfx
 Library4=xui views
+Library5=jstringutils
 Module1=|relative|..\B4XMainPage
 NumberOfFiles=1
-NumberOfLibraries=4
+NumberOfLibraries=5
 NumberOfModules=1
 Version=10.7
 @EndOfDesignText@
