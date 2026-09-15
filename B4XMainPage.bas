@@ -311,19 +311,38 @@ Private Sub BuildProgrammaticUI
 	Dim joTPct As JavaObject = lblTriggerBatteryPct
 	joTPct.RunMethod("setMouseTransparent", Array(True))
 	
-	' Main Content Panel Workspace Canvas
+	' Main Content Panel Workspace Canvas - vibrant gradient so frosted blur is visible
 	Dim p2 As Pane
 	p2.Initialize("pnlMain")
 	pnlMain = p2
-	pnlMain.Color = 0xFF1A1A1A
 	Root.AddView(pnlMain, 0, topOffset, Root.Width, Root.Height - topOffset)
+	Dim joMain As JavaObject = pnlMain
+	joMain.RunMethod("setStyle", Array("-fx-background-color: linear-gradient(to bottom right, #6a11cb 0%, #2575fc 50%, #00d2ff 100%);"))
+	
+	' Decorative blurred blobs behind the drawer (make translucency obvious)
+	Dim blob1 As B4XView = xui.CreatePanel("")
+	blob1.Color = 0x66FF5E62
+	Dim joB1 As JavaObject = blob1
+	joB1.RunMethod("setStyle", Array("-fx-background-color: #FF5E62; -fx-background-radius: 80px;"))
+	pnlMain.AddView(blob1, 40dip, 40dip, 160dip, 160dip)
+	Dim blob2 As B4XView = xui.CreatePanel("")
+	blob2.Color = 0x66FF9966
+	Dim joB2 As JavaObject = blob2
+	joB2.RunMethod("setStyle", Array("-fx-background-color: #FF9966; -fx-background-radius: 70px;"))
+	pnlMain.AddView(blob2, 260dip, 160dip, 140dip, 140dip)
+	Dim blob3 As B4XView = xui.CreatePanel("")
+	blob3.Color = 0x6655EFCB
+	Dim joB3 As JavaObject = blob3
+	joB3.RunMethod("setStyle", Array("-fx-background-color: #55EFCB; -fx-background-radius: 60px;"))
+	pnlMain.AddView(blob3, 120dip, 260dip, 120dip, 120dip)
 	
 	Dim lblCenter As Label
 	lblCenter.Initialize("")
 	Dim bxlCenter As B4XView = lblCenter
 	bxlCenter.Text = "Click the top-right tray capsule to test the dropdown drawer."
-	bxlCenter.TextColor = 0x44FFFFFF
-	pnlMain.AddView(bxlCenter, 40dip, 100dip, 500dip, 40dip)
+	bxlCenter.TextColor = 0xEEFFFFFF
+	bxlCenter.Font = xui.CreateDefaultBoldFont(13)
+	pnlMain.AddView(bxlCenter, 40dip, 20dip, 500dip, 30dip)
 	
 	' Quick Settings Container Overlay Card (semi-transparent frosted card + blurred drop shadow)
 	' NOTE: background color lives inside the CSS string. Do NOT use pnlQuickSettings.Color here,
