@@ -20,6 +20,7 @@ Version=9.85
 Sub Class_Globals
 	Private Root As B4XView 'Assuming B4XPages template
 	Private xui As XUI
+	Private fx As JFX
 	
 	' Core Container Layouts
 	Private pnlMain As B4XView          ' Main dashboard background
@@ -73,8 +74,8 @@ Private Sub B4XPage_Created (Root1 As B4XView)
 	clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
 	clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
 	clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "3h ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "6hr ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "1day ago"), "")
+	clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "6hr ago"), "")
+	clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "1day ago"), "")
 	
 	' 3. RE-CALCULATE DRAWER HEIGHT DYNAMICALLY WITHOUT BREAKING RENDERS
 	ResizeDrawerToContent
@@ -185,11 +186,18 @@ Private Sub btnClearAll_Click
 	ResizeDrawerToContent
 End Sub
 
+' Tap an item to dismiss it (GNOME-style) - shrinks drawer and updates scrollbar/empty state
+Private Sub clvNotifications_ItemClick (Index As Int, Value As Object)
+	clvNotifications.RemoveAt(Index)
+	ResizeDrawerToContent
+End Sub
+
 ' Helper script generating beautiful nested notification blocks programmatically
 Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As String) As B4XView
 	Dim p As B4XView = xui.CreatePanel("")
 	p.SetLayoutAnimated(0, 0, 0, panelWidth - 30dip, 65dip)
 	p.Color = 0xFF2D2D2D
+	p.As(Pane).MouseCursor = fx.Cursors.HAND
 	
 	Private lblTitle As Label
 	lblTitle.Initialize("")
@@ -214,6 +222,18 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	bxlBody.TextColor = 0xDDFFFFFF
 	bxlBody.Font = xui.CreateDefaultFont(12)
 	p.AddView(bxlBody, 10dip, 28dip, p.Width - 20dip, 30dip)
+	
+	' Make inner labels mouse-transparent so the tap hits the item panel -> CLV ItemClick
+	Try
+		Dim joT As JavaObject = bxlTitle
+		joT.RunMethod("setMouseTransparent", Array(True))
+		Dim joTi As JavaObject = bxlTime
+		joTi.RunMethod("setMouseTransparent", Array(True))
+		Dim joB As JavaObject = bxlBody
+		joB.RunMethod("setMouseTransparent", Array(True))
+	Catch
+		Log(LastException.Message)
+	End Try
 	
 	Return p
 End Sub
@@ -451,6 +471,16 @@ Private Sub BuildProgrammaticUI
 	Dim joClear As JavaObject = btnClearAll
 	joClear.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"))
 	
+	Dim btnAddTest As Button
+	btnAddTest.Initialize("btnAddTest")
+	Dim b As B4XView = btnAddTest
+	b.Text = "Add Test"
+	b.TextColor = 0xFFFFFFFF
+	b.Font = xui.CreateDefaultFont(11)
+	pnlQuickSettings.AddView(b, panelWidth - 210dip, 132dip, 90dip, 24dip)
+	Dim joAdd As JavaObject = b
+	joAdd.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"))
+	
 	' FIXED: Do NOT initialize clvNotifications. It's already built by Root.LoadLayout!
 	' Instead, we fetch its Base View panel and target its position inside the card wrapper.
 	Dim clvBasePanel As B4XView = clvNotifications.GetBase
@@ -496,6 +526,15 @@ Private Sub BuildProgrammaticUI
 	End Try
 	
 	pnlQuickSettings.BringToFront
+End Sub
+
+Private Sub btnAddTest_Click
+	AddNotification("Test " & (clvNotifications.Size + 1), "Dynamic add test", "now")
+End Sub
+
+Private Sub AddNotification (Title As String, Body As String, TimeStr As String)
+    clvNotifications.Add(CreateNotificationItem(Title, Body, TimeStr), "")
+    ResizeDrawerToContent ' <- mandatory: refits clvH, updates panelHeight and _clvFitted
 End Sub
 
 Sub CurrentTime As String
