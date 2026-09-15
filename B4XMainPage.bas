@@ -74,7 +74,7 @@ Private Sub B4XPage_Resize (Width As Int, Height As Int)
 	
 	' Maintain float alignment layout positioning rules for the card drop calculations
 	Dim targetLeft As Int = Width - panelWidth - 15dip
-	Dim targetTop As Int = IIf(isDrawerOpen, topOffset + 5dip, -panelHeight - 50dip)
+	Dim targetTop As Int = IIf(isDrawerOpen, topOffset + 5dip, -panelHeight - 200dip)
 	
 	pnlQuickSettings.SetLayoutAnimated(0, targetLeft, targetTop, panelWidth, panelHeight)
 End Sub
@@ -85,10 +85,15 @@ Private Sub btnSettingsTrigger_Click
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
 	
 	If isDrawerOpen Then
-		pnlQuickSettings.SetLayoutAnimated(220, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
+		pnlQuickSettings.SetLayoutAnimated(220, targetLeft, -panelHeight - 200dip, panelWidth, panelHeight)
 		isDrawerOpen = False
-		btnSettingsTrigger.Color = 0x00FFFFFF 
+		btnSettingsTrigger.Color = 0x00FFFFFF
+		Sleep(230)
+		' Only hide if it is still closed (prevents flicker when user re-opens quickly
+		' and guarantees no sliver/shadow peeks when the drawer is short, e.g. <= 2 items).
+		If isDrawerOpen = False Then pnlQuickSettings.Visible = False
 	Else
+		pnlQuickSettings.Visible = True
 		pnlQuickSettings.BringToFront
 		pnlQuickSettings.SetLayoutAnimated(250, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
 		isDrawerOpen = True
@@ -219,7 +224,8 @@ Private Sub BuildProgrammaticUI
 	p3.Initialize("pnlQuickSettings")
 	pnlQuickSettings = p3
 	pnlQuickSettings.Color = 0xFF242424
-	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 50dip, panelWidth, panelHeight)
+	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 200dip, panelWidth, panelHeight)
+	pnlQuickSettings.Visible = False ' Start fully hidden so no sliver shows before first open
 	
 	Dim joPanel As JavaObject = pnlQuickSettings
 	joPanel.RunMethod("setStyle", Array("-fx-background-radius: 18px; -fx-border-radius: 18px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 20, 0, 0, 8);"))
@@ -393,8 +399,10 @@ Private Sub ResizeDrawerToContent
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
 	If isDrawerOpen Then
 		pnlQuickSettings.SetLayoutAnimated(0, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
+		pnlQuickSettings.Visible = True
 	Else
-		pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
+		pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight - 200dip, panelWidth, panelHeight)
+		pnlQuickSettings.Visible = False
 	End If
 	
 	pnlQuickSettings.BringToFront
