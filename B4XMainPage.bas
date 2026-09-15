@@ -28,12 +28,20 @@ Sub Class_Globals
 	
 	' Top Bar Buttons
 	Private btnSettingsTrigger As B4XView
+	Private lblTriggerNotifIcon As B4XView
+	Private lblTriggerBatteryIcon As B4XView
+	Private lblTriggerBatteryBolt As B4XView
+	Private lblTriggerBatteryPct As B4XView
 	
 	' Inside Quick Settings Layout Views
 	Private clvNotifications As CustomListView ' <-- Linked from your MainPage designer layout
 	Private lblVolumePct As B4XView
 	Private btnClearAll As B4XView
 	Private lblEmptyNotifications As B4XView
+	Private lblWifiIcon As B4XView
+	Private lblBTIcon As B4XView
+	Private volSeek As B4XSeekBar
+	Private volBase As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
@@ -116,6 +124,13 @@ Private Sub btnSettingsTrigger_Click
 	End If
 End Sub
 
+' Pane capsule was changed from Button (Click) to Pane - Pane routes via Touch,
+' not Click, so this wires the capsule. Child icons are mouseTransparent so the
+' Pane receives the hit.
+Private Sub btnSettingsTrigger_Touch (Action As Int, X As Float, Y As Float)
+	If Action = 0 Then btnSettingsTrigger_Click
+End Sub
+
 Private Sub pnlMain_Touch (Action As Int, X As Float, Y As Float)
 	If isDrawerOpen And Action = 0 Then
 		btnSettingsTrigger_Click 
@@ -132,11 +147,11 @@ Private Sub btnWifi_Click
 	Dim btn As B4XView = Sender
 	If btn.Color = 0xFF3584E4 Then 
 		btn.Color = 0xFF363636
-		btn.Text = "Wi-Fi: Off"
+		btn.Text = "    Wi-Fi: Off"
 		xui.MsgboxAsync("Wi-Fi Interface Disabled", "System Settings")
 	Else
 		btn.Color = 0xFF3584E4
-		btn.Text = "Wi-Fi: On"
+		btn.Text = "    Wi-Fi: On"
 	End If
 End Sub
 
@@ -150,11 +165,17 @@ Private Sub btnBluetooth_Click
 End Sub
 
 Private Sub btnSliderVolUp_Click
-	lblVolumePct.Text = "85%"
+	volSeek.Value = Min(100, volSeek.Value + 5)
+	lblVolumePct.Text = volSeek.Value & "%"
 End Sub
 
 Private Sub btnSliderVolDown_Click
-	lblVolumePct.Text = "65%"
+	volSeek.Value = Max(0, volSeek.Value - 5)
+	lblVolumePct.Text = volSeek.Value & "%"
+End Sub
+
+Private Sub volSeek_ValueChanged (Value As Int)
+	lblVolumePct.Text = Value & "%"
 End Sub
 
 ' Clears the notification feed and shrinks the drawer to its empty state
@@ -219,15 +240,56 @@ Private Sub BuildProgrammaticUI
 	bxlClock.Font = xui.CreateDefaultBoldFont(13)
 	pnlTopBar.AddView(bxlClock, 20dip, 15dip, 200dip, 20dip)
 	
-	' GNOME Capsule Style Trigger Button
-	Dim b1 As Button
-	b1.Initialize("btnSettingsTrigger")
-	btnSettingsTrigger = b1
-	btnSettingsTrigger.Text = "☴  ⛃  98%"
-	btnSettingsTrigger.TextColor = 0xFFFFFFFF
-	pnlTopBar.AddView(btnSettingsTrigger, Root.Width - 120dip, 10dip, 100dip, 30dip)
+	' GNOME Capsule Style Trigger Button - notification + battery charging icons (FontAwesome)
+	' Composite Pane so icon glyphs can use FA font while the percentage uses the default font
+	Dim pTrig As Pane
+	pTrig.Initialize("btnSettingsTrigger")
+	btnSettingsTrigger = pTrig
+	pnlTopBar.AddView(btnSettingsTrigger, Root.Width - 120dip, 10dip, 105dip, 30dip)
 	Dim joBtn As JavaObject = btnSettingsTrigger
 	joBtn.RunMethod("setStyle", Array("-fx-background-radius: 15px; -fx-border-radius: 15px; -fx-border-color: #444444; -fx-cursor: hand; -fx-background-color: transparent;"))
+	joBtn.RunMethod("setPickOnBounds", Array(True))
+	
+	Dim lblTN As Label
+	lblTN.Initialize("")
+	lblTriggerNotifIcon = lblTN
+	lblTriggerNotifIcon.Text = Chr(0xF0F3) ' FA bell = notifications
+	lblTriggerNotifIcon.TextColor = 0xFFFFFFFF
+	lblTriggerNotifIcon.Font = xui.CreateFontAwesome(13)
+	btnSettingsTrigger.AddView(lblTriggerNotifIcon, 14dip, 7dip, 16dip, 16dip)
+	Dim joTN As JavaObject = lblTriggerNotifIcon
+	joTN.RunMethod("setMouseTransparent", Array(True))
+	
+	Dim lblTB As Label
+	lblTB.Initialize("")
+	lblTriggerBatteryIcon = lblTB
+	lblTriggerBatteryIcon.Text = Chr(0xF240) ' FA battery full
+	lblTriggerBatteryIcon.TextColor = 0xFFFFFFFF
+	lblTriggerBatteryIcon.Font = xui.CreateFontAwesome(14)
+	btnSettingsTrigger.AddView(lblTriggerBatteryIcon, 34dip, 7dip, 18dip, 16dip)
+	Dim joTB As JavaObject = lblTriggerBatteryIcon
+	joTB.RunMethod("setMouseTransparent", Array(True))
+	
+	' Small bolt overlay inside the battery to convey "charging"
+	Dim lblTBBolt As Label
+	lblTBBolt.Initialize("")
+	lblTriggerBatteryBolt = lblTBBolt
+	lblTriggerBatteryBolt.Text = Chr(0xF0E7) ' FA bolt
+	lblTriggerBatteryBolt.TextColor = 0xFF1A1A1A ' dark bolt so it reads inside the white battery; change to white if you prefer outline style
+	lblTriggerBatteryBolt.Font = xui.CreateFontAwesome(7)
+	btnSettingsTrigger.AddView(lblTriggerBatteryBolt, 40dip, 10dip, 8dip, 10dip)
+	Dim joTBBolt As JavaObject = lblTriggerBatteryBolt
+	joTBBolt.RunMethod("setMouseTransparent", Array(True))
+	
+	Dim lblTPct As Label
+	lblTPct.Initialize("")
+	lblTriggerBatteryPct = lblTPct
+	lblTriggerBatteryPct.Text = "98%"
+	lblTriggerBatteryPct.TextColor = 0xFFFFFFFF
+	lblTriggerBatteryPct.Font = xui.CreateDefaultFont(12)
+	btnSettingsTrigger.AddView(lblTriggerBatteryPct, 56dip, 7dip, 38dip, 16dip)
+	Dim joTPct As JavaObject = lblTriggerBatteryPct
+	joTPct.RunMethod("setMouseTransparent", Array(True))
 	
 	' Main Content Panel Workspace Canvas
 	Dim p2 As Pane
@@ -256,51 +318,118 @@ Private Sub BuildProgrammaticUI
 	Dim joPanel As JavaObject = pnlQuickSettings
 	joPanel.RunMethod("setStyle", Array("-fx-background-color: rgba(36,36,36,0.78); -fx-background-radius: 18px; -fx-border-radius: 18px; -fx-border-color: rgba(255,255,255,0.12); -fx-border-width: 1px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.15, 0, 10);"))
 	
-	' Pill Toggles (Row 1)
+	' Pill Toggles (Row 1) - GNOME-style pill buttons with FontAwesome icon glyphs
 	Dim btnWifi As Button
 	btnWifi.Initialize("btnWifi")
 	Dim bxlWifi As B4XView = btnWifi
-	bxlWifi.Text = "Wi-Fi: On"
+	bxlWifi.Text = "    Wi-Fi: On"
 	pnlQuickSettings.AddView(bxlWifi, 20dip, 20dip, 140dip, 45dip)
 	Dim joW As JavaObject = bxlWifi
-	joW.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand;"))
+	joW.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"))
 	bxlWifi.Color = 0xFF3584E4
 	bxlWifi.TextColor = 0xFFFFFFFF
 		
 	Dim btnBT As Button
 	btnBT.Initialize("btnBluetooth")
 	Dim bxlBT As B4XView = btnBT
-	bxlBT.Text = "Bluetooth"
+	bxlBT.Text = "    Bluetooth"
 	pnlQuickSettings.AddView(bxlBT, 180dip, 20dip, 140dip, 45dip)
 	Dim joB As JavaObject = bxlBT
-	joB.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand;"))
+	joB.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"))
 	bxlBT.Color = 0xFF363636
 	bxlBT.TextColor = 0xFFFFFFFF
+	
+	' FontAwesome icon overlays (separate labels so the text font stays default
+	' while icons render with the FA font - mixing fonts in one Button isn't supported).
+	Dim lblW As Label
+	lblW.Initialize("")
+	lblWifiIcon = lblW
+	lblWifiIcon.Text = Chr(0xF1EB) ' FA wifi
+	lblWifiIcon.TextColor = 0xFFFFFFFF
+	lblWifiIcon.Font = xui.CreateFontAwesome(15)
+	' Center the glyph inside the left side of the Wi-Fi pill
+	pnlQuickSettings.AddView(lblWifiIcon, 34dip, 32dip, 20dip, 20dip)
+	Dim joWifiIcon As JavaObject = lblWifiIcon
+	joWifiIcon.RunMethod("setMouseTransparent", Array(True))
+	
+	Dim lblB As Label
+	lblB.Initialize("")
+	lblBTIcon = lblB
+	lblBTIcon.Text = Chr(0xF293) ' FA bluetooth
+	lblBTIcon.TextColor = 0xFFFFFFFF
+	lblBTIcon.Font = xui.CreateFontAwesome(15)
+	pnlQuickSettings.AddView(lblBTIcon, 194dip, 32dip, 20dip, 20dip)
+	Dim joBTIcon As JavaObject = lblBTIcon
+	joBTIcon.RunMethod("setMouseTransparent", Array(True))
 		
-	' Volume Adjustments (Row 2)
+	' Volume Adjustments (Row 2) - GNOME style slider themed to frosted card
 	Dim lblVol As Label
 	lblVol.Initialize("")
 	Dim bxlVol As B4XView = lblVol
-	bxlVol.Text = "🔊 Volume:"
+	bxlVol.Text = Chr(0xF028) ' FA volume-up icon
 	bxlVol.TextColor = 0xFFFFFFFF
-	pnlQuickSettings.AddView(bxlVol, 20dip, 85dip, 80dip, 25dip)
+	bxlVol.Font = xui.CreateFontAwesome(14)
+	pnlQuickSettings.AddView(bxlVol, 20dip, 86dip, 22dip, 24dip)
+	Dim joVolIcon As JavaObject = bxlVol
+	joVolIcon.RunMethod("setMouseTransparent", Array(True))
 	
+	Dim lblVolTxt As Label
+	lblVolTxt.Initialize("")
+	Dim bxlVolTxt As B4XView = lblVolTxt
+	bxlVolTxt.Text = "Volume"
+	bxlVolTxt.TextColor = 0xDDFFFFFF
+	bxlVolTxt.Font = xui.CreateDefaultFont(12)
+	pnlQuickSettings.AddView(bxlVolTxt, 44dip, 87dip, 46dip, 22dip)
+	
+	' Minus stepper (themed circular)
 	Dim btnVDown As Button
 	btnVDown.Initialize("btnSliderVolDown")
 	Dim bxlVD As B4XView = btnVDown
-	bxlVD.Text = "-"
-	pnlQuickSettings.AddView(bxlVD, 110dip, 85dip, 30dip, 25dip)
+	bxlVD.Text = Chr(0xF068) ' FA minus
+	bxlVD.TextColor = 0xFFFFFFFF
+	bxlVD.Font = xui.CreateFontAwesome(10)
+	pnlQuickSettings.AddView(bxlVD, 92dip, 86dip, 26dip, 26dip)
+	Dim joVD As JavaObject = bxlVD
+	joVD.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"))
+	
+	' Slider track (B4XSeekBar - themed to GNOME accent)
+	Dim basePanel As B4XView = xui.CreatePanel("")
+	volBase = basePanel
+	volBase.SetLayoutAnimated(0, 0, 0, 120dip, 22dip)
+	pnlQuickSettings.AddView(volBase, 124dip, 88dip, 120dip, 22dip)
+	Dim tmpLbl As Label
+	tmpLbl.Initialize("")
+	Dim props As Map
+	props.Initialize
+	props.Put("Min", 0)
+	props.Put("Max", 100)
+	props.Put("Value", 75)
+	props.Put("Interval", 1)
+	props.Put("Color1", 0xFF3584E4)       ' filled + thumb (GNOME blue)
+	props.Put("Color2", 0x33FFFFFF)       ' empty track (translucent white on frosted)
+	props.Put("ThumbColor", 0x403584E4)   ' pressed halo
+	volSeek.Initialize(Me, "volSeek")
+	volSeek.DesignerCreateView(volBase, tmpLbl, props)
+	volSeek.Base_Resize(120dip, 22dip)
+	
+	' Plus stepper (themed circular)
 	Dim btnVUp As Button
 	btnVUp.Initialize("btnSliderVolUp")
 	Dim bxlVU As B4XView = btnVUp
-	bxlVU.Text = "+"
-	pnlQuickSettings.AddView(bxlVU, 150dip, 85dip, 30dip, 25dip)
+	bxlVU.Text = Chr(0xF067) ' FA plus
+	bxlVU.TextColor = 0xFFFFFFFF
+	bxlVU.Font = xui.CreateFontAwesome(10)
+	pnlQuickSettings.AddView(bxlVU, 250dip, 86dip, 26dip, 26dip)
+	Dim joVU As JavaObject = bxlVU
+	joVU.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"))
 	
 	Dim lblVVal As Label
 	lblVVal.Initialize("")
 	lblVolumePct = lblVVal
+	lblVolumePct.Text = "75%"
 	lblVolumePct.TextColor = 0xFFFFFFFF
-	pnlQuickSettings.AddView(lblVolumePct, 200dip, 85dip, 50dip, 25dip)
+	lblVolumePct.Font = xui.CreateDefaultFont(12)
+	pnlQuickSettings.AddView(lblVolumePct, 282dip, 86dip, 38dip, 24dip)
 	
 	' Notification Feed Setup (Row 3)
 	Dim lblNotifHeader As Label
