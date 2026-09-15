@@ -32,12 +32,20 @@ Sub Class_Globals
 	' Inside Quick Settings Layout Views
 	Private clvNotifications As CustomListView ' <-- Linked from your MainPage designer layout
 	Private lblVolumePct As B4XView
+	Private btnClearAll As B4XView
+	Private lblEmptyNotifications As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
 	Private panelWidth As Int = 340dip
 	Private panelHeight As Int = 430dip
 	Private topOffset As Int = 50dip ' Height of the top bar
+	
+	' CLV slot inside the drawer card (single source of truth -- see PinCLVToDrawer).
+	' The CLV is a reparented designer view (MainPage.bjl slot is 15,160,310x240),
+	' so it must always be positioned with literal coordinates, never read-backs.
+	Private clvTop As Int = 160dip
+	Private clvH As Int = 240dip
 End Sub
 
 Public Sub Initialize
@@ -77,6 +85,10 @@ Private Sub B4XPage_Resize (Width As Int, Height As Int)
 	Dim targetTop As Int = IIf(isDrawerOpen, topOffset + 5dip, -panelHeight - 200dip)
 	
 	pnlQuickSettings.SetLayoutAnimated(0, targetLeft, targetTop, panelWidth, panelHeight)
+	
+	' Window resizes can stretch the reparented designer CLV beyond the card --
+	' force it back into its slot (cheap and idempotent).
+	PinCLVToDrawer
 End Sub
 
 ' --- INTERACTION LAYER ---
@@ -97,7 +109,10 @@ Private Sub btnSettingsTrigger_Click
 		pnlQuickSettings.BringToFront
 		pnlQuickSettings.SetLayoutAnimated(250, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
 		isDrawerOpen = True
-		btnSettingsTrigger.Color = 0x22FFFFFF 
+		btnSettingsTrigger.Color = 0x22FFFFFF
+		Sleep(260)
+		' Re-pin after the drop animation in case layout passes stretched the CLV mid-flight.
+		If isDrawerOpen Then PinCLVToDrawer
 	End If
 End Sub
 
@@ -116,10 +131,12 @@ End Sub
 Private Sub btnWifi_Click
 	Dim btn As B4XView = Sender
 	If btn.Color = 0xFF3584E4 Then 
-		btn.Color = 0xFF363636     
+		btn.Color = 0xFF363636
+		btn.Text = "Wi-Fi: Off"
 		xui.MsgboxAsync("Wi-Fi Interface Disabled", "System Settings")
 	Else
 		btn.Color = 0xFF3584E4
+		btn.Text = "Wi-Fi: On"
 	End If
 End Sub
 
@@ -138,6 +155,13 @@ End Sub
 
 Private Sub btnSliderVolDown_Click
 	lblVolumePct.Text = "65%"
+End Sub
+
+' Clears the notification feed and shrinks the drawer to its empty state
+Private Sub btnClearAll_Click
+	If clvNotifications.Size = 0 Then Return
+	clvNotifications.Clear
+	ResizeDrawerToContent
 End Sub
 
 ' Helper script generating beautiful nested notification blocks programmatically
@@ -219,16 +243,18 @@ Private Sub BuildProgrammaticUI
 	bxlCenter.TextColor = 0x44FFFFFF
 	pnlMain.AddView(bxlCenter, 40dip, 100dip, 500dip, 40dip)
 	
-	' Quick Settings Container Overlay Card
+	' Quick Settings Container Overlay Card (semi-transparent frosted card + blurred drop shadow)
+	' NOTE: background color lives inside the CSS string. Do NOT use pnlQuickSettings.Color here,
+	' because B4J setStyle would wipe it (and vice versa). JavaFX has no backdrop-filter, so the
+	' "blur" is a soft gaussian drop shadow plus translucency, i.e. a frosted-glass profile.
 	Dim p3 As Pane
 	p3.Initialize("pnlQuickSettings")
 	pnlQuickSettings = p3
-	pnlQuickSettings.Color = 0xFF242424
 	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 200dip, panelWidth, panelHeight)
 	pnlQuickSettings.Visible = False ' Start fully hidden so no sliver shows before first open
 	
 	Dim joPanel As JavaObject = pnlQuickSettings
-	joPanel.RunMethod("setStyle", Array("-fx-background-radius: 18px; -fx-border-radius: 18px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 20, 0, 0, 8);"))
+	joPanel.RunMethod("setStyle", Array("-fx-background-color: rgba(36,36,36,0.78); -fx-background-radius: 18px; -fx-border-radius: 18px; -fx-border-color: rgba(255,255,255,0.12); -fx-border-width: 1px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.15, 0, 10);"))
 	
 	' Pill Toggles (Row 1)
 	Dim btnWifi As Button
@@ -283,7 +309,18 @@ Private Sub BuildProgrammaticUI
 	bxlNH.Text = "Notifications"
 	bxlNH.TextColor = 0xAAFFFFFF
 	bxlNH.Font = xui.CreateDefaultBoldFont(12)
-	pnlQuickSettings.AddView(bxlNH, 20dip, 135dip, 200dip, 20dip)
+	pnlQuickSettings.AddView(bxlNH, 20dip, 135dip, 150dip, 20dip)
+	
+	' "Clear All" pill button, right-aligned on the same header row
+	Dim btnC As Button
+	btnC.Initialize("btnClearAll")
+	btnClearAll = btnC
+	btnClearAll.Text = "Clear All"
+	btnClearAll.TextColor = 0xFFFFFFFF
+	btnClearAll.Font = xui.CreateDefaultFont(11)
+	pnlQuickSettings.AddView(btnClearAll, panelWidth - 110dip, 132dip, 90dip, 24dip)
+	Dim joClear As JavaObject = btnClearAll
+	joClear.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"))
 	
 	' FIXED: Do NOT initialize clvNotifications. It's already built by Root.LoadLayout!
 	' Instead, we fetch its Base View panel and target its position inside the card wrapper.
@@ -291,12 +328,33 @@ Private Sub BuildProgrammaticUI
 	
 	' Remove it from the root layout layer and nest it safely inside our floating drawer card instead
 	clvBasePanel.RemoveViewFromParent
-	pnlQuickSettings.AddView(clvBasePanel, 15dip, 160dip, panelWidth - 30dip, 240dip)
+	pnlQuickSettings.AddView(clvBasePanel, 15dip, clvTop, panelWidth - 30dip, clvH)
 	
-	clvNotifications.sv.Color = 0xFF242424
+	' Transparent list so the frosted card shows through (opaque gray here would paint a solid
+	' rectangle inside the semi-transparent drawer).
+	clvNotifications.sv.Color = xui.Color_Transparent
 	CallSubDelayed3(Me, "SetScrollPaneBackgroundColor", clvNotifications, xui.Color_Transparent)
 	
+	' Empty-state placeholder, overlaid on the CLV area and toggled in ResizeDrawerToContent
+	Dim lblEmpty As Label
+	lblEmpty.Initialize("")
+	lblEmptyNotifications = lblEmpty
+	lblEmptyNotifications.Text = "No new notifications"
+	lblEmptyNotifications.TextColor = 0x88FFFFFF
+	lblEmptyNotifications.Font = xui.CreateDefaultFont(12)
+	pnlQuickSettings.AddView(lblEmptyNotifications, 20dip, clvTop, panelWidth - 40dip, 40dip)
+	lblEmptyNotifications.Visible = False
+	
 	StyleCustomScrollbar(clvNotifications)
+	
+	' Kill the default designer/scrollpane outline so no bordered box can paint outside the card.
+	' Applied AFTER StyleCustomScrollbar so it wins over the fallback inline style there.
+	Dim joSV As JavaObject = clvNotifications.sv
+	joSV.RunMethod("setStyle", Array("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"))
+	Dim joBase As JavaObject = clvNotifications.GetBase
+	joBase.RunMethod("setStyle", Array("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"))
+	
+	PinCLVToDrawer
 	pnlQuickSettings.BringToFront
 End Sub
 
@@ -387,13 +445,20 @@ Private Sub ResizeDrawerToContent
 	Dim maxClvHeight As Int = 240dip
 	Dim targetClvHeight As Int = Max(minClvHeight, Min(totalItemsHeight, maxClvHeight))
 	
-	' 2. Resize the CLV View base layout wrapper panel safely inside the drawer card
-	Dim clvBase As B4XView = clvNotifications.GetBase
-	clvBase.SetLayoutAnimated(0, clvBase.Left, clvBase.Top, clvBase.Width, targetClvHeight)
-	clvNotifications.Base_Resize(clvBase.Width, targetClvHeight) ' Forces internal Scrollview content rebuild
+	' 2. Pin the reparented designer CLV to its exact slot inside the drawer card.
+	' Always use literal coordinates here -- reading back Left/Top/Width can return
+	' stale (e.g. designer-size) values and leave the list taller than the card.
+	clvH = targetClvHeight
+	PinCLVToDrawer
 	
-	' 3. Calculate new total height for the outer GNOME drawer panel container
-	panelHeight = 160dip + targetClvHeight + 20dip
+	' 3. Calculate new total height for the outer GNOME drawer panel container.
+	' By construction the list bottom (clvTop + clvH) always sits 20dip above the card bottom,
+	' so the CLV can never overflow the panel.
+	panelHeight = clvTop + targetClvHeight + 20dip
+	
+	' 3b. Empty state: show placeholder and disable Clear All when there is nothing to clear
+	If btnClearAll.IsInitialized Then btnClearAll.Enabled = (clvNotifications.Size > 0)
+	If lblEmptyNotifications.IsInitialized Then lblEmptyNotifications.Visible = (clvNotifications.Size = 0)
 	
 	' 4. Instantly shift or anchor the panel location based on state
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
@@ -406,4 +471,15 @@ Private Sub ResizeDrawerToContent
 	End If
 	
 	pnlQuickSettings.BringToFront
+End Sub
+
+' Forces the reparented designer CLV back into its exact slot inside the drawer card.
+' The CLV is created by MainPage.bjl and moved into pnlQuickSettings at runtime, so window
+' resizes or open/close animations can leave it stretched beyond the card (a plain Pane does
+' not clip children, so the overflow paints outside the card as in the bug screenshot).
+' Kept as one helper so every card move (resize, toggle, content change) re-pins it.
+Private Sub PinCLVToDrawer
+	Dim clvBase As B4XView = clvNotifications.GetBase
+	clvBase.SetLayoutAnimated(0, 15dip, clvTop, panelWidth - 30dip, clvH)
+	clvNotifications.Base_Resize(panelWidth - 30dip, clvH) ' Forces internal Scrollview content rebuild
 End Sub
