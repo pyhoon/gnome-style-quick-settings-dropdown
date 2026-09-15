@@ -224,16 +224,9 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	p.AddView(bxlBody, 10dip, 28dip, p.Width - 20dip, 30dip)
 	
 	' Make inner labels mouse-transparent so the tap hits the item panel -> CLV ItemClick
-	Try
-		Dim joT As JavaObject = bxlTitle
-		joT.RunMethod("setMouseTransparent", Array(True))
-		Dim joTi As JavaObject = bxlTime
-		joTi.RunMethod("setMouseTransparent", Array(True))
-		Dim joB As JavaObject = bxlBody
-		joB.RunMethod("setMouseTransparent", Array(True))
-	Catch
-		Log(LastException.Message)
-	End Try
+	SetMouseTransparent(bxlTitle)
+	SetMouseTransparent(bxlTime)
+	SetMouseTransparent(bxlBody)
 	
 	Return p
 End Sub
@@ -266,9 +259,8 @@ Private Sub BuildProgrammaticUI
 	pTrig.Initialize("btnSettingsTrigger")
 	btnSettingsTrigger = pTrig
 	pnlTopBar.AddView(btnSettingsTrigger, Root.Width - 120dip, 10dip, 105dip, 30dip)
-	Dim joBtn As JavaObject = btnSettingsTrigger
-	joBtn.RunMethod("setStyle", Array("-fx-background-radius: 15px; -fx-border-radius: 15px; -fx-border-color: #444444; -fx-cursor: hand; -fx-background-color: transparent;"))
-	joBtn.RunMethod("setPickOnBounds", Array(True))
+	btnSettingsTrigger.As(Pane).Style = "-fx-background-radius: 15px; -fx-border-radius: 15px; -fx-border-color: #444444; -fx-cursor: hand; -fx-background-color: transparent;"
+	btnSettingsTrigger.As(Pane).PickOnBounds = True
 	
 	Dim lblTN As Label
 	lblTN.Initialize("")
@@ -277,8 +269,7 @@ Private Sub BuildProgrammaticUI
 	lblTriggerNotifIcon.TextColor = 0xFFFFFFFF
 	lblTriggerNotifIcon.Font = xui.CreateFontAwesome(13)
 	btnSettingsTrigger.AddView(lblTriggerNotifIcon, 14dip, 7dip, 16dip, 16dip)
-	Dim joTN As JavaObject = lblTriggerNotifIcon
-	joTN.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblTriggerNotifIcon)
 	
 	Dim lblTB As Label
 	lblTB.Initialize("")
@@ -287,8 +278,7 @@ Private Sub BuildProgrammaticUI
 	lblTriggerBatteryIcon.TextColor = 0xFFFFFFFF
 	lblTriggerBatteryIcon.Font = xui.CreateFontAwesome(14)
 	btnSettingsTrigger.AddView(lblTriggerBatteryIcon, 34dip, 7dip, 18dip, 16dip)
-	Dim joTB As JavaObject = lblTriggerBatteryIcon
-	joTB.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblTriggerBatteryIcon)
 	
 	' Small bolt overlay inside the battery to convey "charging"
 	Dim lblTBBolt As Label
@@ -298,8 +288,7 @@ Private Sub BuildProgrammaticUI
 	lblTriggerBatteryBolt.TextColor = 0xFF1A1A1A ' dark bolt so it reads inside the white battery; change to white if you prefer outline style
 	lblTriggerBatteryBolt.Font = xui.CreateFontAwesome(7)
 	btnSettingsTrigger.AddView(lblTriggerBatteryBolt, 40dip, 10dip, 8dip, 10dip)
-	Dim joTBBolt As JavaObject = lblTriggerBatteryBolt
-	joTBBolt.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblTriggerBatteryBolt)
 	
 	Dim lblTPct As Label
 	lblTPct.Initialize("")
@@ -308,33 +297,28 @@ Private Sub BuildProgrammaticUI
 	lblTriggerBatteryPct.TextColor = 0xFFFFFFFF
 	lblTriggerBatteryPct.Font = xui.CreateDefaultFont(12)
 	btnSettingsTrigger.AddView(lblTriggerBatteryPct, 56dip, 7dip, 38dip, 16dip)
-	Dim joTPct As JavaObject = lblTriggerBatteryPct
-	joTPct.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblTriggerBatteryPct)
 	
 	' Main Content Panel Workspace Canvas - vibrant gradient so frosted blur is visible
 	Dim p2 As Pane
 	p2.Initialize("pnlMain")
 	pnlMain = p2
 	Root.AddView(pnlMain, 0, topOffset, Root.Width, Root.Height - topOffset)
-	Dim joMain As JavaObject = pnlMain
-	joMain.RunMethod("setStyle", Array("-fx-background-color: linear-gradient(to bottom right, #6a11cb 0%, #2575fc 50%, #00d2ff 100%);"))
+	pnlMain.As(Pane).Style = "-fx-background-color: linear-gradient(to bottom right, #6a11cb 0%, #2575fc 50%, #00d2ff 100%);"
 	
-	' Decorative blurred blobs behind the drawer (make translucency obvious)
+	' Decorative blurred blobs behind the drawer (make translucency obvious) - clustered top-right
 	Dim blob1 As B4XView = xui.CreatePanel("")
 	blob1.Color = 0x66FF5E62
-	Dim joB1 As JavaObject = blob1
-	joB1.RunMethod("setStyle", Array("-fx-background-color: #FF5E62; -fx-background-radius: 80px;"))
-	pnlMain.AddView(blob1, 40dip, 40dip, 160dip, 160dip)
+	blob1.As(Pane).Style = "-fx-background-color: #FF5E62; -fx-background-radius: 80px;"
+	pnlMain.AddView(blob1, 460dip, 10dip, 160dip, 160dip)
 	Dim blob2 As B4XView = xui.CreatePanel("")
 	blob2.Color = 0x66FF9966
-	Dim joB2 As JavaObject = blob2
-	joB2.RunMethod("setStyle", Array("-fx-background-color: #FF9966; -fx-background-radius: 70px;"))
-	pnlMain.AddView(blob2, 260dip, 160dip, 140dip, 140dip)
+	blob2.As(Pane).Style = "-fx-background-color: #FF9966; -fx-background-radius: 70px;"
+	pnlMain.AddView(blob2, 580dip, 50dip, 140dip, 140dip)
 	Dim blob3 As B4XView = xui.CreatePanel("")
 	blob3.Color = 0x6655EFCB
-	Dim joB3 As JavaObject = blob3
-	joB3.RunMethod("setStyle", Array("-fx-background-color: #55EFCB; -fx-background-radius: 60px;"))
-	pnlMain.AddView(blob3, 120dip, 260dip, 120dip, 120dip)
+	blob3.As(Pane).Style = "-fx-background-color: #55EFCB; -fx-background-radius: 60px;"
+	pnlMain.AddView(blob3, 520dip, 120dip, 120dip, 120dip)
 	
 	Dim lblCenter As Label
 	lblCenter.Initialize("")
@@ -354,8 +338,7 @@ Private Sub BuildProgrammaticUI
 	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 200dip, panelWidth, panelHeight)
 	pnlQuickSettings.Visible = False ' Start fully hidden so no sliver shows before first open
 	
-	Dim joPanel As JavaObject = pnlQuickSettings
-	joPanel.RunMethod("setStyle", Array("-fx-background-color: rgba(36,36,36,0.78); -fx-background-radius: 18px; -fx-border-radius: 18px; -fx-border-color: rgba(255,255,255,0.12); -fx-border-width: 1px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.15, 0, 10);"))
+	pnlQuickSettings.As(Pane).Style = "-fx-background-color: rgba(36,36,36,0.68); -fx-background-radius: 18px; -fx-border-radius: 18px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.55), 28, 0.15, 0, 10);"
 	
 	' Pill Toggles (Row 1) - GNOME-style pill buttons with FontAwesome icon glyphs
 	Dim btnWifi As Button
@@ -363,8 +346,7 @@ Private Sub BuildProgrammaticUI
 	Dim bxlWifi As B4XView = btnWifi
 	bxlWifi.Text = "    Wi-Fi: On"
 	pnlQuickSettings.AddView(bxlWifi, 20dip, 20dip, 140dip, 45dip)
-	Dim joW As JavaObject = bxlWifi
-	joW.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"))
+	bxlWifi.As(Button).Style = "-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"
 	bxlWifi.Color = 0xFF3584E4
 	bxlWifi.TextColor = 0xFFFFFFFF
 		
@@ -373,8 +355,7 @@ Private Sub BuildProgrammaticUI
 	Dim bxlBT As B4XView = btnBT
 	bxlBT.Text = "    Bluetooth"
 	pnlQuickSettings.AddView(bxlBT, 180dip, 20dip, 140dip, 45dip)
-	Dim joB As JavaObject = bxlBT
-	joB.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"))
+	bxlBT.As(Button).Style = "-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"
 	bxlBT.Color = 0xFF363636
 	bxlBT.TextColor = 0xFFFFFFFF
 	
@@ -388,8 +369,7 @@ Private Sub BuildProgrammaticUI
 	lblWifiIcon.Font = xui.CreateFontAwesome(15)
 	' Center the glyph inside the left side of the Wi-Fi pill
 	pnlQuickSettings.AddView(lblWifiIcon, 34dip, 32dip, 20dip, 20dip)
-	Dim joWifiIcon As JavaObject = lblWifiIcon
-	joWifiIcon.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblWifiIcon)
 	
 	Dim lblB As Label
 	lblB.Initialize("")
@@ -398,8 +378,7 @@ Private Sub BuildProgrammaticUI
 	lblBTIcon.TextColor = 0xFFFFFFFF
 	lblBTIcon.Font = xui.CreateFontAwesome(15)
 	pnlQuickSettings.AddView(lblBTIcon, 194dip, 32dip, 20dip, 20dip)
-	Dim joBTIcon As JavaObject = lblBTIcon
-	joBTIcon.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(lblBTIcon)
 		
 	' Volume Adjustments (Row 2) - GNOME style slider themed to frosted card
 	Dim lblVol As Label
@@ -409,8 +388,7 @@ Private Sub BuildProgrammaticUI
 	bxlVol.TextColor = 0xFFFFFFFF
 	bxlVol.Font = xui.CreateFontAwesome(14)
 	pnlQuickSettings.AddView(bxlVol, 20dip, 86dip, 22dip, 24dip)
-	Dim joVolIcon As JavaObject = bxlVol
-	joVolIcon.RunMethod("setMouseTransparent", Array(True))
+	SetMouseTransparent(bxlVol)
 	
 	Dim lblVolTxt As Label
 	lblVolTxt.Initialize("")
@@ -428,8 +406,7 @@ Private Sub BuildProgrammaticUI
 	bxlVD.TextColor = 0xFFFFFFFF
 	bxlVD.Font = xui.CreateFontAwesome(10)
 	pnlQuickSettings.AddView(bxlVD, 92dip, 86dip, 26dip, 26dip)
-	Dim joVD As JavaObject = bxlVD
-	joVD.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"))
+	bxlVD.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"
 	
 	' Slider track (B4XSeekBar - themed to GNOME accent)
 	Dim basePanel As B4XView = xui.CreatePanel("")
@@ -459,8 +436,7 @@ Private Sub BuildProgrammaticUI
 	bxlVU.TextColor = 0xFFFFFFFF
 	bxlVU.Font = xui.CreateFontAwesome(10)
 	pnlQuickSettings.AddView(bxlVU, 250dip, 86dip, 26dip, 26dip)
-	Dim joVU As JavaObject = bxlVU
-	joVU.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"))
+	bxlVU.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"
 	
 	Dim lblVVal As Label
 	lblVVal.Initialize("")
@@ -487,8 +463,7 @@ Private Sub BuildProgrammaticUI
 	btnClearAll.TextColor = 0xFFFFFFFF
 	btnClearAll.Font = xui.CreateDefaultFont(11)
 	pnlQuickSettings.AddView(btnClearAll, panelWidth - 110dip, 132dip, 90dip, 24dip)
-	Dim joClear As JavaObject = btnClearAll
-	joClear.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"))
+	btnClearAll.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"
 	
 	Dim btnAddTest As Button
 	btnAddTest.Initialize("btnAddTest")
@@ -497,8 +472,7 @@ Private Sub BuildProgrammaticUI
 	b.TextColor = 0xFFFFFFFF
 	b.Font = xui.CreateDefaultFont(11)
 	pnlQuickSettings.AddView(b, panelWidth - 210dip, 132dip, 90dip, 24dip)
-	Dim joAdd As JavaObject = b
-	joAdd.RunMethod("setStyle", Array("-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"))
+	b.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"
 	
 	' FIXED: Do NOT initialize clvNotifications. It's already built by Root.LoadLayout!
 	' Instead, we fetch its Base View panel and target its position inside the card wrapper.
@@ -526,11 +500,9 @@ Private Sub BuildProgrammaticUI
 	StyleCustomScrollbar(clvNotifications)
 	
 	' Kill the default designer/scrollpane outline so no bordered box can paint outside the card.
-	' Applied AFTER StyleCustomScrollbar so it wins over the fallback inline style there.
-	Dim joSV As JavaObject = clvNotifications.sv
-	joSV.RunMethod("setStyle", Array("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"))
-	Dim joBase As JavaObject = clvNotifications.GetBase
-	joBase.RunMethod("setStyle", Array("-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"))
+	' Applied AFTER StyleCustomScrollbar so it wins over the fallback inline style there. (JFX)
+	clvNotifications.sv.As(ScrollPane).Style = "-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"
+	clvNotifications.GetBase.As(Pane).Style = "-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"
 	
 	PinCLVToDrawer
 	
@@ -708,6 +680,15 @@ Private Sub SetClvScrollbarVisible(Visible As Boolean)
 		joMe.RunMethod("setClvFitted", Array(Not(Visible)))
 	Catch
 		Log("setClvFitted failed: " & LastException.Message)
+	End Try
+End Sub
+
+Private Sub SetMouseTransparent(View As B4XView)
+	Try
+		Dim jo As JavaObject = View
+		jo.RunMethod("setMouseTransparent", Array(True))
+	Catch
+		Log(LastException.Message)
 	End Try
 End Sub
 
