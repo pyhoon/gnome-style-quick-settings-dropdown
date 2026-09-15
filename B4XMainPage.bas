@@ -779,7 +779,7 @@ Private Sub ResizeDrawerToContent
 	' 2b. Footer below CLV - left user pill + right circles, pinned to CLV bottom (+12dip gap)
 	Dim footerY As Int = clvTop + targetClvHeight + 12dip
 	If btnFooterUserPill.IsInitialized Then btnFooterUserPill.SetLayoutAnimated(0, 15dip, footerY, 110dip, 38dip)
-	If lblFooterUserPillIcon.IsInitialized Then lblFooterUserPillIcon.SetLayoutAnimated(0, 28dip, footerY + 9dip, 20dip, 20dip)
+	'If lblFooterUserPillIcon.IsInitialized Then lblFooterUserPillIcon.SetLayoutAnimated(0, 28dip, footerY + 9dip, 20dip, 20dip)
 	If btnSettingsCircle.IsInitialized Then btnSettingsCircle.SetLayoutAnimated(0, panelWidth - 145dip, footerY, 38dip, 38dip)
 	If btnUserCircle.IsInitialized Then btnUserCircle.SetLayoutAnimated(0, panelWidth - 99dip, footerY, 38dip, 38dip)
 	If btnPowerCircle.IsInitialized Then btnPowerCircle.SetLayoutAnimated(0, panelWidth - 53dip, footerY, 38dip, 38dip)
