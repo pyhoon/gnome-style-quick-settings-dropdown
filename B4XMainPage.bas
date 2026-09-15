@@ -49,7 +49,7 @@ Sub Class_Globals
 	Private btnUserCircle As B4XView
 	Private btnPowerCircle As B4XView
 	Private btnFooterUserPill As B4XView
-	Private lblFooterUserPillIcon As B4XView
+	'Private lblFooterUserPillIcon As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
