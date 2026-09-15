@@ -11,11 +11,11 @@ Version=9.85
 
 #Macro: Title, Export B4XPages, ide://run?File=%B4X%\Zipper.jar&Args=%PROJECT_NAME%.zip
 
-' B4J ==========================================
+' ==========================================================
 ' Full working example for a GNOME-style Quick Settings Dropdown
-' Target: B4J Desktop Application (B4XPages Template Preferred)
-' Dependecies: XUI, jCustomListView
-' =============================================
+' Target: B4J Desktop Application (B4XPages Template)
+' Dependencies: XUI, jCustomListView, JavaObject, StringUtils
+' =============================================================
 
 Sub Class_Globals
 	Private Root As B4XView 'Assuming B4XPages template
@@ -32,7 +32,6 @@ Sub Class_Globals
 	' Inside Quick Settings Layout Views
 	Private clvNotifications As CustomListView
 	Private lblVolumePct As B4XView
-	'Private lblBrightnessPct As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
@@ -44,31 +43,25 @@ End Sub
 Public Sub Initialize
 End Sub
 
-' This event will handle programmatic layout creation if you prefer bypassing the visual designer
 Private Sub B4XPage_Created (Root1 As B4XView)
 	Root = Root1
-	Root.LoadLayout("MainPage")
 	
-	' 1. BUILD THE UI LAYOUTS PROGRAMMATICALLY FOR PLUG-AND-PLAY UTILITY
+	' 1. BUILD THE UI LAYOUTS PROGRAMMATICALLY
 	BuildProgrammaticUI
 	
 	' 2. INITIAL COMPONENT STATES
 	lblVolumePct.Text = "75%"
-	'lblBrightnessPct.Text = "80%"
 	
 	' Populating dummy system notifications mimicking Linux Desktop
 	clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
 	clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
-	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
+	clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("System Update", "Security patch ready to install.", "10m ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("Network Manager", "Connected to Wi-Fi: Secure_Office_5G", "45m ago"), "")
 	'clvNotifications.Add(CreateNotificationItem("Backup System", "Daily snapshot completed successfully.", "2h ago"), "")
 	
-	' TRIGGER THE RESIZE HERE (After items are added)
+	' 3. RE-CALCULATE DRAWER HEIGHT DYNAMICALLY WITHOUT BREAKING RENDERS
 	ResizeDrawerToContent
-	
-	' Position the GNOME panel cleanly out of view initially
-	'HidePanelImmediately
 End Sub
 
 ' Mathematically handles window resizing dynamically
@@ -81,9 +74,8 @@ Private Sub B4XPage_Resize (Width As Int, Height As Int)
 	
 	' Maintain float alignment layout positioning rules for the card drop calculations
 	Dim targetLeft As Int = Width - panelWidth - 15dip
-	Dim targetTop As Int = IIf(isDrawerOpen, topOffset + 5dip, -panelHeight)
+	Dim targetTop As Int = IIf(isDrawerOpen, topOffset + 5dip, -panelHeight - 50dip)
 	
-	' FIXED: Changed from .SetLayout to .SetLayoutAnimated with 0 duration
 	pnlQuickSettings.SetLayoutAnimated(0, targetLeft, targetTop, panelWidth, panelHeight)
 End Sub
 
@@ -94,13 +86,14 @@ Private Sub btnSettingsTrigger_Click
 	Dim targetLeft As Int = Root.Width - panelWidth - 15dip
 	
 	If isDrawerOpen Then
-		' Retract up seamlessly out of site
-		pnlQuickSettings.SetLayoutAnimated(220, targetLeft, -panelHeight, panelWidth, panelHeight)
+		' Retract up seamlessly out of sight
+		pnlQuickSettings.SetLayoutAnimated(220, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
 		isDrawerOpen = False
 		' Change panel indicator color back to baseline
 		btnSettingsTrigger.Color = 0x00FFFFFF ' Transparent standard
 	Else
 		' Snap out and descend gracefully right beneath your tray icon
+		pnlQuickSettings.BringToFront
 		pnlQuickSettings.SetLayoutAnimated(250, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
 		isDrawerOpen = True
 		' Give active status visual context highlight
@@ -110,15 +103,14 @@ End Sub
 
 ' UX Feature: Clicking outside onto your main UI components instantly closes the tray window
 Private Sub pnlMain_Touch (Action As Int, X As Float, Y As Float)
-	' 0 evaluates directly to the standard screen ACTION_DOWN action
+	' 0 evaluates to standard screen TOUCH_ACTION_DOWN
 	If isDrawerOpen And Action = 0 Then
 		btnSettingsTrigger_Click ' Toggles active states cleanly back to false
 	End If
 End Sub
 
-' Explicitly consume panel clicks to stop event propagation leaking into background views
 Private Sub pnlQuickSettings_Touch (Action As Int, X As Float, Y As Float)
-	' Keeping this empty blocks child bubbles from trickling downwards
+	' Intentionally left blank to capture clicks and prevent drop down dissipation
 End Sub
 
 ' --- UI INTERACTION STUBS (Quick Settings Controls) ---
@@ -164,7 +156,6 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	Dim p As B4XView = xui.CreatePanel("")
 	p.SetLayoutAnimated(0, 0, 0, panelWidth - 30dip, 65dip)
 	p.Color = 0xFF2D2D2D
-	'p.Color = xui.Color_Transparent
 	
 	' Title String styling
 	Private lblTitle As Label
@@ -172,7 +163,6 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	Dim bxlTitle As B4XView = lblTitle
 	bxlTitle.Text = Title
 	bxlTitle.TextColor = 0xFFFFFFFF
-	'bxlTitle.Color = xui.Color_Transparent
 	bxlTitle.Font = xui.CreateDefaultBoldFont(13)
 	p.AddView(bxlTitle, 10dip, 8dip, 180dip, 20dip)
 	
@@ -191,16 +181,15 @@ Private Sub CreateNotificationItem(Title As String, Body As String, TimeStr As S
 	Dim bxlBody As B4XView = lblBody
 	bxlBody.Text = Body
 	bxlBody.TextColor = 0xDDFFFFFF
-	'bxlBody.Color = xui.Color_Transparent
 	bxlBody.Font = xui.CreateDefaultFont(12)
 	p.AddView(bxlBody, 10dip, 28dip, p.Width - 20dip, 30dip)
 	
 	Return p
 End Sub
 
-' Programmatic UI Generator for seamless project portability
 Private Sub BuildProgrammaticUI
 	Root.Color = 0xFF1E1E1E
+	Root.LoadLayout("MainPage")
 	
 	' FIXED: Changed 'Panel' declarations to 'Pane' for B4J
 	' Top Bar Panel
@@ -210,7 +199,6 @@ Private Sub BuildProgrammaticUI
 	pnlTopBar.Color = 0xFF101010
 	Root.AddView(pnlTopBar, 0, 0, Root.Width, topOffset)
 	
-	
 	' System Tray Time Label
 	Dim lblClock As Label
 	lblClock.Initialize("")
@@ -218,7 +206,7 @@ Private Sub BuildProgrammaticUI
 	bxlClock.Text = CurrentTime ' "Sep 15, 1:57 PM"
 	bxlClock.TextColor = 0xFFFFFFFF
 	bxlClock.Font = xui.CreateDefaultBoldFont(13)
-	pnlTopBar.AddView(bxlClock, 20dip, 15dip, 150dip, 20dip)
+	pnlTopBar.AddView(bxlClock, 20dip, 15dip, 200dip, 20dip)
 	
 	' GNOME Capsule Style Trigger Button
 	Dim b1 As Button
@@ -228,7 +216,7 @@ Private Sub BuildProgrammaticUI
 	btnSettingsTrigger.TextColor = 0xFFFFFFFF
 	pnlTopBar.AddView(btnSettingsTrigger, Root.Width - 120dip, 10dip, 100dip, 30dip)
 	Dim joBtn As JavaObject = btnSettingsTrigger
-	joBtn.RunMethod("setStyle", Array("-fx-background-radius: 15px; -fx-border-radius: 15px; -fx-border-color: #444444; -fx-cursor: hand;"))
+	joBtn.RunMethod("setStyle", Array("-fx-background-radius: 15px; -fx-border-radius: 15px; -fx-border-color: #444444; -fx-cursor: hand; -fx-background-color: transparent;"))
 	
 	' Main Content Panel Workspace Canvas
 	Dim p2 As Pane
@@ -248,9 +236,8 @@ Private Sub BuildProgrammaticUI
 	Dim p3 As Pane
 	p3.Initialize("pnlQuickSettings")
 	pnlQuickSettings = p3
-	'pnlQuickSettings.Color = 0xFF242424
-	pnlQuickSettings.Color = 0xFF363636
-	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight, panelWidth, panelHeight)
+	pnlQuickSettings.Color = 0xFF242424
+	Root.AddView(pnlQuickSettings, Root.Width - panelWidth - 15dip, -panelHeight - 50dip, panelWidth, panelHeight)
 	
 	' Injection of critical GNOME theme specs: smooth curves and comprehensive alpha drop shadowing drops
 	Dim joPanel As JavaObject = pnlQuickSettings
@@ -261,8 +248,6 @@ Private Sub BuildProgrammaticUI
 	btnWifi.Initialize("btnWifi")
 	Dim bxlWifi As B4XView = btnWifi
 	bxlWifi.Text = "Wi-Fi: On"
-	'bxlWifi.Color = 0xFF3584E4
-	'bxlWifi.TextColor = 0xFFFFFFFF
 	pnlQuickSettings.AddView(bxlWifi, 20dip, 20dip, 140dip, 45dip)
 	Dim joW As JavaObject = bxlWifi
 	joW.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand;"))
@@ -273,8 +258,6 @@ Private Sub BuildProgrammaticUI
 	btnBT.Initialize("btnBluetooth")
 	Dim bxlBT As B4XView = btnBT
 	bxlBT.Text = "Bluetooth"
-	'bxlBT.Color = 0xFF3584E4
-	'bxlBT.TextColor = 0xFFFFFFFF
 	pnlQuickSettings.AddView(bxlBT, 180dip, 20dip, 140dip, 45dip)
 	Dim joB As JavaObject = bxlBT
 	joB.RunMethod("setStyle", Array("-fx-background-radius: 20px; -fx-cursor: hand;"))
@@ -407,26 +390,27 @@ Private Sub ResizeDrawerToContent
             totalItemsHeight = totalItemsHeight + p.Height
         Next
     End If
-    
-    ' Set layout bounds constraints 
+
+    ' Set layout bounds constraints
     Dim minClvHeight As Int = 60dip
-    Dim maxClvHeight As Int = 240dip ' Caps the height so it doesn't break window size boundaries
+    Dim maxClvHeight As Int = 240dip
     Dim targetClvHeight As Int = Max(minClvHeight, Min(totalItemsHeight, maxClvHeight))
-    
+
     ' 2. Resize the CLV View bound bounds safely inside the drawer card
-    clvNotifications.AsView.SetLayoutAnimated(0, clvNotifications.AsView.Left, clvNotifications.AsView.Top, clvNotifications.AsView.Width, targetClvHeight)
-    
+    Dim clvBase As B4XView = clvNotifications.GetBase
+    clvBase.SetLayoutAnimated(0, clvBase.Left, clvBase.Top, clvBase.Width, targetClvHeight)
+    clvNotifications.Base_Resize(clvBase.Width, targetClvHeight) ' Forces internal Scrollview rebuild
+
     ' 3. Calculate new total height for the outer GNOME drawer panel container
-    panelHeight = 160dip + targetClvHeight + 20dip 
-    
+    panelHeight = 160dip + targetClvHeight + 20dip
+
     ' 4. Instantly shift or anchor the panel location based on state
     Dim targetLeft As Int = Root.Width - panelWidth - 15dip
     If isDrawerOpen Then
         pnlQuickSettings.SetLayoutAnimated(0, targetLeft, topOffset + 5dip, panelWidth, panelHeight)
     Else
-        pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight, panelWidth, panelHeight)
+        pnlQuickSettings.SetLayoutAnimated(0, targetLeft, -panelHeight - 50dip, panelWidth, panelHeight)
     End If
-    
-    ' Extra safety measure to keep the floating card on top layer
+
     pnlQuickSettings.BringToFront
 End Sub
