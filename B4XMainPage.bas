@@ -43,6 +43,11 @@ Sub Class_Globals
 	Private lblBTIcon As B4XView
 	Private volSeek As B4XSeekBar
 	Private volBase As B4XView
+	Private lblDarkIcon As B4XView
+	Private lblDNDIcon As B4XView
+	Private btnSettingsCircle As B4XView
+	Private btnUserCircle As B4XView
+	Private btnPowerCircle As B4XView
 	
 	' State Tracking
 	Private isDrawerOpen As Boolean = False
@@ -53,8 +58,9 @@ Sub Class_Globals
 	' CLV slot inside the drawer card (single source of truth -- see PinCLVToDrawer).
 	' The CLV is a reparented designer view (MainPage.bjl slot is 15,160,310x240),
 	' so it must always be positioned with literal coordinates, never read-backs.
-	Private clvTop As Int = 160dip
+	Private clvTop As Int = 200dip
 	Private clvH As Int = 240dip
+	Private footerH As Int = 38dip
 End Sub
 
 Public Sub Initialize
@@ -163,6 +169,25 @@ Private Sub btnBluetooth_Click
 	Else
 		btn.Color = 0xFF3584E4
 	End If
+End Sub
+
+' Placeholder - dark/light toggle (no real theme switch, visual only)
+Private Sub btnDarkMode_Click
+	Dim btn As B4XView = Sender
+	If btn.Color = 0xFF3584E4 Then btn.Color = 0xFF363636 Else btn.Color = 0xFF3584E4
+End Sub
+
+Private Sub btnDND_Click
+	Dim btn As B4XView = Sender
+	If btn.Color = 0xFF3584E4 Then btn.Color = 0xFF363636 Else btn.Color = 0xFF3584E4
+End Sub
+
+' Small circle placeholders - no functionality
+Private Sub btnSettingsCircle_Click
+End Sub
+Private Sub btnUserCircle_Click
+End Sub
+Private Sub btnPowerCircle_Click
 End Sub
 
 Private Sub btnSliderVolUp_Click
@@ -380,14 +405,51 @@ Private Sub BuildProgrammaticUI
 	pnlQuickSettings.AddView(lblBTIcon, 194dip, 32dip, 20dip, 20dip)
 	SetMouseTransparent(lblBTIcon)
 		
-	' Volume Adjustments (Row 2) - GNOME style slider themed to frosted card
+	' Extra pills (Row 2) - dark/light + DND, above volume (user request)
+	Dim btnDark As Button
+	btnDark.Initialize("btnDarkMode")
+	Dim bxlDark As B4XView = btnDark
+	bxlDark.Text = "    Dark Mode"
+	pnlQuickSettings.AddView(bxlDark, 20dip, 75dip, 140dip, 45dip)
+	bxlDark.As(Button).Style = "-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"
+	bxlDark.Color = 0xFF363636
+	bxlDark.TextColor = 0xFFFFFFFF
+	Dim lblDM As Label
+	lblDM.Initialize("")
+	lblDarkIcon = lblDM
+	lblDarkIcon.Text = Chr(0xF186) ' FA moon-o
+	lblDarkIcon.TextColor = 0xFFFFFFFF
+	lblDarkIcon.Font = xui.CreateFontAwesome(14)
+	pnlQuickSettings.AddView(lblDarkIcon, 34dip, 87dip, 20dip, 20dip)
+	SetMouseTransparent(lblDarkIcon)
+	
+	Dim btnDND As Button
+	btnDND.Initialize("btnDND")
+	Dim bxlDND As B4XView = btnDND
+	bxlDND.Text = "    Do Not Disturb"
+	bxlDND.TextColor = 0xFFFFFFFF
+	bxlDND.Font = xui.CreateDefaultFont(11)
+	pnlQuickSettings.AddView(bxlDND, 180dip, 75dip, 140dip, 45dip)
+	bxlDND.As(Button).Style = "-fx-background-radius: 20px; -fx-cursor: hand; -fx-alignment: center;"
+	bxlDND.Color = 0xFF363636
+	bxlDND.TextColor = 0xFFFFFFFF
+	Dim lblDND As Label
+	lblDND.Initialize("")
+	lblDNDIcon = lblDND
+	lblDNDIcon.Text = Chr(0xF1F6) ' FA bell-slash
+	lblDNDIcon.TextColor = 0xFFFFFFFF
+	lblDNDIcon.Font = xui.CreateFontAwesome(13)
+	pnlQuickSettings.AddView(lblDNDIcon, 194dip, 87dip, 20dip, 20dip)
+	SetMouseTransparent(lblDNDIcon)
+	
+	' Volume Adjustments (Row 3) - GNOME style slider themed to frosted card (now below pills)
 	Dim lblVol As Label
 	lblVol.Initialize("")
 	Dim bxlVol As B4XView = lblVol
 	bxlVol.Text = Chr(0xF028) ' FA volume-up icon
 	bxlVol.TextColor = 0xFFFFFFFF
 	bxlVol.Font = xui.CreateFontAwesome(14)
-	pnlQuickSettings.AddView(bxlVol, 20dip, 86dip, 22dip, 24dip)
+	pnlQuickSettings.AddView(bxlVol, 20dip, 130dip, 22dip, 24dip)
 	SetMouseTransparent(bxlVol)
 	
 	Dim lblVolTxt As Label
@@ -396,7 +458,7 @@ Private Sub BuildProgrammaticUI
 	bxlVolTxt.Text = "Volume"
 	bxlVolTxt.TextColor = 0xDDFFFFFF
 	bxlVolTxt.Font = xui.CreateDefaultFont(12)
-	pnlQuickSettings.AddView(bxlVolTxt, 44dip, 87dip, 46dip, 22dip)
+	pnlQuickSettings.AddView(bxlVolTxt, 44dip, 131dip, 46dip, 22dip)
 	
 	' Minus stepper (themed circular)
 	Dim btnVDown As Button
@@ -405,14 +467,15 @@ Private Sub BuildProgrammaticUI
 	bxlVD.Text = Chr(0xF068) ' FA minus
 	bxlVD.TextColor = 0xFFFFFFFF
 	bxlVD.Font = xui.CreateFontAwesome(10)
-	pnlQuickSettings.AddView(bxlVD, 92dip, 86dip, 26dip, 26dip)
-	bxlVD.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"
+	pnlQuickSettings.AddView(bxlVD, 92dip, 130dip, 26dip, 26dip)
+	Dim joVDc As JavaObject = bxlVD
+	joVDc.RunMethodJO("getStyleClass", Null).RunMethod("add", Array("vol-stepper"))
 	
 	' Slider track (B4XSeekBar - themed to GNOME accent)
 	Dim basePanel As B4XView = xui.CreatePanel("")
 	volBase = basePanel
 	volBase.SetLayoutAnimated(0, 0, 0, 120dip, 22dip)
-	pnlQuickSettings.AddView(volBase, 124dip, 88dip, 120dip, 22dip)
+	pnlQuickSettings.AddView(volBase, 124dip, 132dip, 120dip, 22dip)
 	Dim tmpLbl As Label
 	tmpLbl.Initialize("")
 	Dim props As Map
@@ -435,8 +498,9 @@ Private Sub BuildProgrammaticUI
 	bxlVU.Text = Chr(0xF067) ' FA plus
 	bxlVU.TextColor = 0xFFFFFFFF
 	bxlVU.Font = xui.CreateFontAwesome(10)
-	pnlQuickSettings.AddView(bxlVU, 250dip, 86dip, 26dip, 26dip)
-	bxlVU.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand;"
+	pnlQuickSettings.AddView(bxlVU, 250dip, 130dip, 26dip, 26dip)
+	Dim joVUc As JavaObject = bxlVU
+	joVUc.RunMethodJO("getStyleClass", Null).RunMethod("add", Array("vol-stepper"))
 	
 	Dim lblVVal As Label
 	lblVVal.Initialize("")
@@ -444,16 +508,16 @@ Private Sub BuildProgrammaticUI
 	lblVolumePct.Text = "75%"
 	lblVolumePct.TextColor = 0xFFFFFFFF
 	lblVolumePct.Font = xui.CreateDefaultFont(12)
-	pnlQuickSettings.AddView(lblVolumePct, 282dip, 86dip, 38dip, 24dip)
+	pnlQuickSettings.AddView(lblVolumePct, 282dip, 130dip, 38dip, 24dip)
 	
-	' Notification Feed Setup (Row 3)
+	' Notification Feed Setup (Row 4) - lowered to avoid overlap (was 215, CLV at 230 overlapped)
 	Dim lblNotifHeader As Label
 	lblNotifHeader.Initialize("")
 	Dim bxlNH As B4XView = lblNotifHeader
 	bxlNH.Text = "Notifications"
 	bxlNH.TextColor = 0xAAFFFFFF
 	bxlNH.Font = xui.CreateDefaultBoldFont(12)
-	pnlQuickSettings.AddView(bxlNH, 20dip, 135dip, 150dip, 20dip)
+	pnlQuickSettings.AddView(bxlNH, 20dip, 170dip, 150dip, 20dip)
 	
 	' "Clear All" pill button, right-aligned on the same header row
 	Dim btnC As Button
@@ -462,8 +526,9 @@ Private Sub BuildProgrammaticUI
 	btnClearAll.Text = "Clear All"
 	btnClearAll.TextColor = 0xFFFFFFFF
 	btnClearAll.Font = xui.CreateDefaultFont(11)
-	pnlQuickSettings.AddView(btnClearAll, panelWidth - 110dip, 132dip, 90dip, 24dip)
-	btnClearAll.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"
+	pnlQuickSettings.AddView(btnClearAll, panelWidth - 110dip, 167dip, 90dip, 24dip)
+	Dim joClearC As JavaObject = btnClearAll
+	joClearC.RunMethodJO("getStyleClass", Null).RunMethod("add", Array("header-pill"))
 	
 	Dim btnAddTest As Button
 	btnAddTest.Initialize("btnAddTest")
@@ -471,8 +536,9 @@ Private Sub BuildProgrammaticUI
 	b.Text = "Add Test"
 	b.TextColor = 0xFFFFFFFF
 	b.Font = xui.CreateDefaultFont(11)
-	pnlQuickSettings.AddView(b, panelWidth - 210dip, 132dip, 90dip, 24dip)
-	b.As(Button).Style = "-fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand;"
+	pnlQuickSettings.AddView(b, panelWidth - 210dip, 167dip, 90dip, 24dip)
+	Dim joAddC As JavaObject = b
+	joAddC.RunMethodJO("getStyleClass", Null).RunMethod("add", Array("header-pill"))
 	
 	' FIXED: Do NOT initialize clvNotifications. It's already built by Root.LoadLayout!
 	' Instead, we fetch its Base View panel and target its position inside the card wrapper.
@@ -505,6 +571,52 @@ Private Sub BuildProgrammaticUI
 	clvNotifications.GetBase.As(Pane).Style = "-fx-background-color: transparent; -fx-border-color: transparent; -fx-border-width: 0;"
 	
 	PinCLVToDrawer
+	
+	' Footer circles (below CLV) - settings / user / power, hover-enabled, right-aligned
+	Dim footerY As Int = clvTop + clvH + 12dip
+	Dim btnSetC As Button
+	btnSetC.Initialize("btnSettingsCircle")
+	Dim bxlSetC As B4XView = btnSetC
+	bxlSetC.Text = Chr(0xF013) ' FA cog
+	bxlSetC.TextColor = 0xFFFFFFFF
+	bxlSetC.Font = xui.CreateFontAwesome(14)
+	pnlQuickSettings.AddView(bxlSetC, panelWidth - 145dip, footerY, 38dip, 38dip)
+	btnSettingsCircle = bxlSetC
+	Dim btnUserC As Button
+	btnUserC.Initialize("btnUserCircle")
+	Dim bxlUserC As B4XView = btnUserC
+	bxlUserC.Text = Chr(0xF007) ' FA user
+	bxlUserC.TextColor = 0xFFFFFFFF
+	bxlUserC.Font = xui.CreateFontAwesome(14)
+	pnlQuickSettings.AddView(bxlUserC, panelWidth - 99dip, footerY, 38dip, 38dip)
+	btnUserCircle = bxlUserC
+	Dim btnPowC As Button
+	btnPowC.Initialize("btnPowerCircle")
+	Dim bxlPowC As B4XView = btnPowC
+	bxlPowC.Text = Chr(0xF011) ' FA power-off
+	bxlPowC.TextColor = 0xFFFFFFFF
+	bxlPowC.Font = xui.CreateFontAwesome(14)
+	pnlQuickSettings.AddView(bxlPowC, panelWidth - 53dip, footerY, 38dip, 38dip)
+	btnPowerCircle = bxlPowC
+	' JFX hover - enabled look via CSS classes (so :hover works, inline would win)
+	For Each v As B4XView In Array(btnSettingsCircle, btnUserCircle, btnPowerCircle)
+		Dim joC As JavaObject = v
+		Dim classes As JavaObject = joC.RunMethod("getStyleClass", Null)
+		classes.RunMethod("add", Array("circle-btn"))
+	Next
+	Try
+		Dim joP As JavaObject = pnlQuickSettings
+		Dim cssHover As String = ".circle-btn { -fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 19px; -fx-border-radius: 19px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand; -fx-alignment: center; } .circle-btn:hover { -fx-background-color: rgba(255,255,255,0.18); -fx-border-color: rgba(255,255,255,0.28); } .vol-stepper { -fx-background-color: rgba(255,255,255,0.10); -fx-background-radius: 13px; -fx-border-radius: 13px; -fx-border-color: rgba(255,255,255,0.14); -fx-border-width: 1px; -fx-cursor: hand; } .vol-stepper:hover { -fx-background-color: rgba(255,255,255,0.18); -fx-border-color: rgba(255,255,255,0.28); } .header-pill { -fx-background-color: rgba(255,255,255,0.08); -fx-background-radius: 12px; -fx-border-radius: 12px; -fx-border-color: rgba(255,255,255,0.18); -fx-border-width: 1px; -fx-cursor: hand; } .header-pill:hover { -fx-background-color: rgba(255,255,255,0.14); -fx-border-color: rgba(255,255,255,0.28); }"
+		Dim b64 As String = StringToBase64(cssHover)
+		Dim url As String = "data:text/css;base64," & b64
+		Dim scene As JavaObject = joP.RunMethod("getScene", Null)
+		If scene.IsInitialized Then
+			Dim sheets As JavaObject = scene.RunMethod("getStylesheets", Null)
+			sheets.RunMethod("add", Array(url))
+		End If
+	Catch
+		Log("hover css failed: " & LastException.Message)
+	End Try
 	
 	' Install key/wheel filter so fitted list (<=3) cannot be scrolled via
 	' keyboard (Up/Down/Page/Home/End/Space) or mouse-wheel. The viewport is already
@@ -631,11 +743,15 @@ Private Sub ResizeDrawerToContent
 	' stale (e.g. designer-size) values and leave the list taller than the card.
 	clvH = targetClvHeight
 	PinCLVToDrawer
+	' 2b. Footer circles sit below CLV - right-aligned, pinned to CLV bottom (+12dip gap)
+	Dim footerY As Int = clvTop + targetClvHeight + 12dip
+	If btnSettingsCircle.IsInitialized Then btnSettingsCircle.SetLayoutAnimated(0, panelWidth - 145dip, footerY, 38dip, 38dip)
+	If btnUserCircle.IsInitialized Then btnUserCircle.SetLayoutAnimated(0, panelWidth - 99dip, footerY, 38dip, 38dip)
+	If btnPowerCircle.IsInitialized Then btnPowerCircle.SetLayoutAnimated(0, panelWidth - 53dip, footerY, 38dip, 38dip)
 	
 	' 3. Calculate new total height for the outer GNOME drawer panel container.
-	' By construction the list bottom (clvTop + clvH) always sits 20dip above the card bottom,
-	' so the CLV can never overflow the panel.
-	panelHeight = clvTop + targetClvHeight + 20dip
+	' Includes footer row (38dip + 12dip gap + 16dip bottom) so CLV never covers header/buttons and footer never clips.
+	panelHeight = clvTop + targetClvHeight + 12dip + footerH + 16dip
 	
 	' 3b. Empty state: show placeholder and disable Clear All when there is nothing to clear
 	If btnClearAll.IsInitialized Then btnClearAll.Enabled = (clvNotifications.Size > 0)
